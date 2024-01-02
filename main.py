@@ -9,7 +9,7 @@ import sys
 # CONSTANTS
 WIN_RES = pg.math.Vector2((1100, 600))
 TANK = (20, 20, WIN_RES.x-40, WIN_RES.y-40)
-GRAVITY = 0
+GRAVITY = 100
 POSITION = pg.math.Vector2((550, 50))
 VELOCITY = pg.math.Vector2(0, 0)
 
@@ -37,7 +37,7 @@ class Engine:
         pg.display.flip()
 
     def update(self):
-        self.delta_time = self.clock.tick(24)
+        self.delta_time = self.clock.tick() * 0.001
         self.time = pg.time.get_ticks() * 0.001
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
 
@@ -45,10 +45,10 @@ class Engine:
 
         global POSITION, VELOCITY
         VELOCITY.y += GRAVITY * self.delta_time
-        POSITION += VELOCITY #* self.delta_time
+        POSITION += VELOCITY * self.delta_time
         POSITION = collision(POSITION)
 
-        pg.draw.circle(self.screen, COLOR_WATER, POSITION, 10)
+        pg.draw.circle(self.screen, COLOR_WATER, POSITION, 5)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
 
     def handle_events(self):
@@ -77,16 +77,16 @@ class Engine:
 def collision(pos:pg.math.Vector2) -> pg.math.Vector2:
     global VELOCITY
 
-    ref = pos - WIN_RES/2
+    # NOTE: 5 is the radius of the particule
+    ref = pos - WIN_RES/2 + pg.math.Vector2(5, 5)
 
-    # NOTE: 10 is the radius of the particule
-    if abs(ref.x + 10) >= TANK[2]/2:
-        VELOCITY.x *= -1
-        pos.x = WIN_RES.x/2 + (TANK[2]/2 - 11) * np.sign(ref.x + 10)
+    if abs(ref.x) >= TANK[2]/2:
+        VELOCITY.x *= -0.7
+        pos.x = WIN_RES.x/2 + (TANK[2]/2 - 5 - 0.001) * np.sign(ref.x)
 
-    if abs(ref.y + 10) >= TANK[3]/2:
-        VELOCITY.y *= -1
-        pos.y = WIN_RES.y/2 + (TANK[3]/2 - 11) * np.sign(ref.y + 10)
+    if abs(ref.y) >= TANK[3]/2:
+        VELOCITY.y *= -0.7
+        pos.y = WIN_RES.y/2 + (TANK[3]/2 - 5 - 0.001) * np.sign(ref.y)
 
     return pos
 
