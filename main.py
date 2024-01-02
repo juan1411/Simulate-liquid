@@ -29,11 +29,15 @@ class Engine:
         self.particules:list[particule] = []
 
     def create_particules(self, num_particules: int = NUM_PARTICULES):
+        i = 1
         for _ in range(num_particules):
-            pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+            # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+            pos = (100 + (i%50 - 1) * 15, 100 + (i//50 + 1) * 15)
             self.particules.append(particule(pos))
+            i += 1
 
     def render(self):
+        pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
         pg.display.flip()
 
@@ -59,6 +63,10 @@ class Engine:
             if event.type == pg.QUIT:
                 self.is_running = False
 
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                density = calculate_density(self.particules, event.pos)
+                print(f'{event.pos} - density: {density:.0f}')
+
             elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
                 GRAVITY += 1
 
@@ -74,6 +82,17 @@ class Engine:
 
         pg.quit()
         sys.exit()
+
+
+def calculate_density(particules: list[particule], pos) -> float:
+    if not isinstance(pos, Vector2):
+        pos = Vector2(pos)
+
+    density = 0
+    for p in particules:
+        density += p.smoothing_kernel(pos) * MASS
+    
+    return density
 
 
 if __name__ == "__main__":
