@@ -1,0 +1,12 @@
+from pygame.math import Vector2
+
+# CONSTANTS
+WIN_RES = Vector2((1100, 600))
+TANK = (20, 20, WIN_RES.x-40, WIN_RES.y-40)
+GRAVITY = 100
+NUM_PARTICULES = 500
+
+# COLORS
+COLOR_BG = (26, 35, 54)
+COLOR_WATER = (43, 106, 240)
+COLOR_TANK = (250, 250, 250)

@@ -6,17 +6,10 @@ import pygame as pg
 import numpy as np
 import sys
 
-# CONSTANTS
-WIN_RES = pg.math.Vector2((1100, 600))
-TANK = (20, 20, WIN_RES.x-40, WIN_RES.y-40)
-GRAVITY = 100
-POSITION = pg.math.Vector2((550, 50))
-VELOCITY = pg.math.Vector2(0, 0)
+from constants import *
+from liquid import particule
+from collisions import *
 
-# COLORS
-COLOR_BG = (26, 35, 54)
-COLOR_WATER = (43, 106, 240)
-COLOR_TANK = (250, 250, 250)
 
 class Engine:
 
@@ -33,7 +26,15 @@ class Engine:
         self.delta_time = 0
         self.time = 0
 
+        self.particules:list[particule] = []
+
+    def create_particules(self, num_particules: int = NUM_PARTICULES):
+        for _ in range(num_particules):
+            pos = np.random.randint(WIN_RES * 0.2, WIN_RES * 0.8, 2)
+            self.particules.append(particule(pos))
+
     def render(self):
+        pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
         pg.display.flip()
 
     def update(self):
@@ -43,21 +44,22 @@ class Engine:
 
         self.screen.fill(COLOR_BG)
 
-        global POSITION, VELOCITY
-        VELOCITY.y += GRAVITY * self.delta_time
-        POSITION += VELOCITY * self.delta_time
-        POSITION = collision(POSITION)
+        for i in range(len(self.particules)):
+            self.particules[i].vel.y += GRAVITY * self.delta_time
+            self.particules[i].pos += self.particules[i].vel * self.delta_time
 
-        pg.draw.circle(self.screen, COLOR_WATER, POSITION, 5)
-        pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
+            self.particules[i] = tank_collision(self.particules[i])
+            self.particules[i].draw(self.screen)
+        
 
     def handle_events(self):
+        global GRAVITY
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.is_running = False
 
             elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
-                global GRAVITY
                 GRAVITY += 1
 
             else:
@@ -74,23 +76,7 @@ class Engine:
         sys.exit()
 
 
-def collision(pos:pg.math.Vector2) -> pg.math.Vector2:
-    global VELOCITY
-
-    # NOTE: 5 is the radius of the particule
-    ref = pos - WIN_RES/2 + pg.math.Vector2(5, 5)
-
-    if abs(ref.x) >= TANK[2]/2:
-        VELOCITY.x *= -0.7
-        pos.x = WIN_RES.x/2 + (TANK[2]/2 - 5 - 0.001) * np.sign(ref.x)
-
-    if abs(ref.y) >= TANK[3]/2:
-        VELOCITY.y *= -0.7
-        pos.y = WIN_RES.y/2 + (TANK[3]/2 - 5 - 0.001) * np.sign(ref.y)
-
-    return pos
-
-
 if __name__ == "__main__":
     app = Engine()
+    app.create_particules()
     app.run()
