@@ -30,7 +30,7 @@ class Engine:
 
     def create_particules(self, num_particules: int = NUM_PARTICULES):
         for _ in range(num_particules):
-            pos = np.random.randint(WIN_RES * 0.2, WIN_RES * 0.8, 2)
+            pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
             self.particules.append(particule(pos))
 
     def render(self):
