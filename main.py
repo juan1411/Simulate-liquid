@@ -3,21 +3,22 @@ Pygame stuffs: create window, handle events and updating frames
 """
 
 import pygame as pg
+import numpy as np
 import sys
 
 # CONSTANTS
 WIN_RES = pg.math.Vector2((1100, 600))
-TANK = (5, 5, WIN_RES.x-10, WIN_RES.y-10)
+TANK = (20, 20, WIN_RES.x-40, WIN_RES.y-40)
 GRAVITY = 0
-POSITION = pg.math.Vector2((550, 10))
-VELOCITY = 0
+POSITION = pg.math.Vector2((550, 50))
+VELOCITY = pg.math.Vector2(0, 0)
 
 # COLORS
 COLOR_BG = (26, 35, 54)
 COLOR_WATER = (43, 106, 240)
 COLOR_TANK = (250, 250, 250)
 
-class Motor:
+class Engine:
 
     def __init__(self):
         pg.init()
@@ -36,15 +37,15 @@ class Motor:
         pg.display.flip()
 
     def update(self):
-        self.delta_time = self.clock.tick()
+        self.delta_time = self.clock.tick(24)
         self.time = pg.time.get_ticks() * 0.001
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
 
         self.screen.fill(COLOR_BG)
 
         global POSITION, VELOCITY
-        VELOCITY += GRAVITY * self.delta_time
-        POSITION.y += VELOCITY * self.delta_time
+        VELOCITY.y += GRAVITY * self.delta_time
+        POSITION += VELOCITY #* self.delta_time
         POSITION = collision(POSITION)
 
         pg.draw.circle(self.screen, COLOR_WATER, POSITION, 10)
@@ -76,14 +77,20 @@ class Motor:
 def collision(pos:pg.math.Vector2) -> pg.math.Vector2:
     global VELOCITY
 
-    if abs(pos.x - TANK[2]) > TANK[2]:
-        pass
+    ref = pos - WIN_RES/2
 
-    if abs(pos.y - TANK[3]) > TANK[3]:
-        pass
+    # NOTE: 10 is the radius of the particule
+    if abs(ref.x + 10) >= TANK[2]/2:
+        VELOCITY.x *= -1
+        pos.x = WIN_RES.x/2 + (TANK[2]/2 - 11) * np.sign(ref.x + 10)
+
+    if abs(ref.y + 10) >= TANK[3]/2:
+        VELOCITY.y *= -1
+        pos.y = WIN_RES.y/2 + (TANK[3]/2 - 11) * np.sign(ref.y + 10)
 
     return pos
 
+
 if __name__ == "__main__":
-    app = Motor()
+    app = Engine()
     app.run()
