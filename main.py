@@ -47,7 +47,7 @@ class Engine:
         self.screen.fill(COLOR_BG)
 
         # TODO: too slow, find another way
-        # self.update_densities()
+        self.update_densities()
         # self.update_pressures()
 
         for i in range(len(self.particules)):
@@ -68,7 +68,7 @@ class Engine:
         # NOTE: recalculate densities at every update is slow
         for i in range(len(self.particules)):
             pos = self.particules[i].pos
-            self.particules[i].density = calculate_density(self.particules, pos)
+            self.particules[i].density = calculate_density_np(self.particules, pos)
 
     def update_pressures(self):
         # TODO: too slow, find another way

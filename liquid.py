@@ -63,7 +63,9 @@ def calculate_density_np(particules: list[particule], ref) -> float:
 
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
     # print(dst.shape)
-    return round(np.sum(smoothing_kernel(dst)) * MASS, 6) * SCALING_FACTOR_DENSITY
+
+    influence = np.sum(smoothing_kernel(dst))
+    return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
     
 def calculate_pressure_force(particules: list[particule], pos) -> Vector2:
     if not isinstance(pos, Vector2):
