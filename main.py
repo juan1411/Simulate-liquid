@@ -90,7 +90,7 @@ def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
         particules.append(particule(pos))
 
     return particules
-        
+    
 
 def calculate_density(particules: list[particule], pos) -> float:
     if not isinstance(pos, Vector2):
@@ -100,7 +100,7 @@ def calculate_density(particules: list[particule], pos) -> float:
     for p in particules:
         density += p.smoothing_kernel(pos) * MASS
     
-    return density
+    return round(density, 6) * SCALING_FACTOR_DENSITY
 
 
 if __name__ == "__main__":
