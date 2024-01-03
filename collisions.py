@@ -6,14 +6,15 @@ from pygame.math import Vector2
 
 def tank_collision(particule: particule) -> particule:
 
-    ref = particule.pos - WIN_RES/2 + Vector2(particule.rad, particule.rad)
+    center_tank = Vector2(TANK[0] + TANK[2]/2, TANK[1] + TANK[3]/2)
+    ref = particule.pos - center_tank
 
-    if abs(ref.x) >= TANK[2]/2:
+    if abs(ref.x) + particule.rad >= TANK[2]/2:
         particule.vel.x *= -0.7
-        particule.pos.x = WIN_RES.x/2 + (TANK[2]/2 - particule.rad - 0.001) * np.sign(ref.x)
+        particule.pos.x = center_tank.x + (TANK[2]/2 - particule.rad - 0.001) * np.sign(ref.x)
 
-    if abs(ref.y) >= TANK[3]/2:
+    if abs(ref.y) + particule.rad >= TANK[3]/2:
         particule.vel.y *= -0.7
-        particule.pos.y = WIN_RES.y/2 + (TANK[3]/2 - particule.rad - 0.001) * np.sign(ref.y)
+        particule.pos.y = center_tank.y + (TANK[3]/2 - particule.rad - 0.001) * np.sign(ref.y)
 
     return particule

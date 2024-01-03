@@ -19,7 +19,6 @@ class particule:
         value = 0
 
         if dst < SMOOTHING_RADIUS:
-           self.color = (240, 106, 43)
            value = SMOOTHING_RADIUS - dst
 
         return (value ** 3) / VOLUME
@@ -28,7 +27,6 @@ class particule:
         value = 0
 
         if dst < SMOOTHING_RADIUS:
-           self.color = (240, 106, 43)
            value = SMOOTHING_RADIUS - dst
 
         return -3 * (value ** 2) / VOLUME
