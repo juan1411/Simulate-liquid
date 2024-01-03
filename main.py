@@ -7,7 +7,7 @@ import numpy as np
 import sys
 
 from constants import *
-from liquid import particule
+from liquid import *
 from collisions import *
 
 
@@ -82,45 +82,19 @@ class Engine:
         sys.exit()
 
 
-def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
-    spacing = 7
-    per_row = 130
-    particules = []
-    for i in range(num_particules):
-        # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
-        pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
-        particules.append(particule(pos))
+def tank_collision(particule: particule) -> particule:
 
-    return particules
-    
+    ref = particule.pos - CENTER_TANK
 
-def calculate_density(particules: list[particule], pos) -> float:
-    if not isinstance(pos, Vector2):
-        pos = Vector2(pos)
+    if abs(ref.x) + particule.rad >= TANK[2]/2:
+        particule.vel.x *= -0.7
+        particule.pos.x = CENTER_TANK.x + (TANK[2]/2 - particule.rad - 0.001) * np.sign(ref.x)
 
-    influence = 0
-    for p in particules:
-        dst = (p.pos - pos).magnitude()
-        influence += p.smoothing_kernel(dst)
-    
-    return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
+    if abs(ref.y) + particule.rad >= TANK[3]/2:
+        particule.vel.y *= -0.7
+        particule.pos.y = CENTER_TANK.y + (TANK[3]/2 - particule.rad - 0.001) * np.sign(ref.y)
 
-
-def calculate_gradient_density(particules: list[particule], pos) -> Vector2:
-    if not isinstance(pos, Vector2):
-        pos = Vector2(pos)
-
-    influence = Vector2(0, 0)
-    for p in particules:
-        dir = (p.pos - pos)
-        dst = dir.magnitude()
-
-        if dst > 0:
-            slope = p.smoothing_kernel_derivative(dst)
-            dir = dir.elementwise() * slope * MASS * SCALING_FACTOR_DENSITY / dst
-            influence += dir
-    
-    return round(influence, 6)
+    return particule
 
 
 if __name__ == "__main__":
