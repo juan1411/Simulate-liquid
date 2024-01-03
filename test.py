@@ -1,5 +1,6 @@
+from time import time
 from constants import *
-from main import create_particules, calculate_density
+from liquid import * 
 
 
 def test_density():
@@ -18,5 +19,18 @@ def test_density():
 
         i += 1
 
+# NOTE: v1: 10k particules ~ 491s
+# NOTE: v2: 10k particules ~ 47s
+def time_density():
+    particules = create_particules(10000)
 
-test_density()
+    start = time()
+    for p in particules:
+        _ = calculate_density(particules, p.pos)
+        # _ = calculate_density_np(particules, p.pos)
+
+    print(f'Took {time() - start:.0f} segs to calculate all densities.')
+
+
+# test_density()
+# time_density()

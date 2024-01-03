@@ -47,7 +47,7 @@ class Engine:
         self.screen.fill(COLOR_BG)
 
         # TODO: too slow, find another way
-        self.update_densities()
+        # self.update_densities()
         # self.update_pressures()
 
         for i in range(len(self.particules)):
