@@ -27,14 +27,10 @@ class Engine:
         self.time = 0
 
         self.particules:list[particule] = []
+        self.inicial_setup()
 
-    def create_particules(self, num_particules: int = NUM_PARTICULES):
-        i = 1
-        for _ in range(num_particules):
-            # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
-            pos = (100 + (i%50 - 1) * 15, 100 + (i//50 + 1) * 15)
-            self.particules.append(particule(pos))
-            i += 1
+    def inicial_setup(self):
+        self.particules = create_particules()
 
     def render(self):
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
@@ -65,7 +61,7 @@ class Engine:
 
             elif event.type == pg.MOUSEBUTTONDOWN:
                 density = calculate_density(self.particules, event.pos)
-                print(f'{event.pos} - density: {density:.0f}')
+                print(f'{event.pos} - density: {density:.3f}')
 
             elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
                 GRAVITY += 1
@@ -84,6 +80,18 @@ class Engine:
         sys.exit()
 
 
+def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
+    spacing = 7
+    per_row = 130
+    particules = []
+    for i in range(num_particules):
+        # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+        pos = (100 + (i%per_row - 1) * spacing, 75 + (i//per_row + 1) * spacing)
+        particules.append(particule(pos))
+
+    return particules
+        
+
 def calculate_density(particules: list[particule], pos) -> float:
     if not isinstance(pos, Vector2):
         pos = Vector2(pos)
@@ -97,5 +105,4 @@ def calculate_density(particules: list[particule], pos) -> float:
 
 if __name__ == "__main__":
     app = Engine()
-    app.create_particules()
     app.run()
