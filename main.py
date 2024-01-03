@@ -27,6 +27,8 @@ class Engine:
         self.time = 0
 
         self.particules:list[particule] = []
+        self.densities: list[float] = []
+        self.pressures: list[Vector2] = []
         self.inicial_setup()
 
     def inicial_setup(self):
@@ -44,13 +46,30 @@ class Engine:
 
         self.screen.fill(COLOR_BG)
 
+        self.update_densities()
+        # self.update_pressures()
+
         for i in range(len(self.particules)):
             self.particules[i].vel.y += GRAVITY * self.delta_time
-            self.particules[i].pos += self.particules[i].vel * self.delta_time
+            density = self.particules[i].density
+            # pressure = self.particules[i].pressure
+            # pressure_vel = pressure.elementwise() * self.delta_time / density
+            # self.particules[i].vel += pressure_vel
 
+            self.particules[i].pos += self.particules[i].vel * self.delta_time
             self.particules[i] = tank_collision(self.particules[i])
             self.particules[i].draw(self.screen)
-        
+
+
+    def update_densities(self):
+        for i in range(len(self.particules)):
+            pos = self.particules[i].pos
+            self.particules[i].density = calculate_density(self.particules, pos)
+
+    def update_pressures(self):
+        for i in range(len(self.particules)):
+            pos = self.particules[i].pos
+            self.particules[i].pressure = calculate_pressure_force(self.particules, pos)
 
     def handle_events(self):
         global GRAVITY
@@ -62,8 +81,9 @@ class Engine:
             elif event.type == pg.MOUSEBUTTONDOWN:
                 # density = calculate_density(self.particules, event.pos)
                 # print(f'{event.pos} - density: {density:.3f}')
-                gradient_dens = calculate_gradient_density(self.particules, event.pos)
-                print(f'{event.pos} - gradient density: ({gradient_dens.x:.3f}, {gradient_dens.y:.3f})')
+                # gradient_dens = calculate_gradient_density(self.particules, event.pos)
+                # print(f'{event.pos} - gradient density: ({gradient_dens.x:.3f}, {gradient_dens.y:.3f})')
+                print("Mouse button down")
 
             elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
                 GRAVITY += 1

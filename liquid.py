@@ -10,6 +10,8 @@ class particule:
         self.pos = pos if isinstance(pos, Vector2) else Vector2(pos[0], pos[1])
         self.rad = rad
         self.vel: Vector2 = Vector2(0, 0)
+        self.density: float = None
+        self.pressure: Vector2 = Vector2(0, 0)
         self.color = COLOR_WATER
 
     def draw(self, screen):
@@ -56,7 +58,7 @@ def calculate_density(particules: list[particule], pos) -> float:
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
 
 
-def calculate_gradient_density(particules: list[particule], pos) -> Vector2:
+def calculate_pressure_force(particules: list[particule], pos) -> Vector2:
     if not isinstance(pos, Vector2):
         pos = Vector2(pos)
 
@@ -67,7 +69,13 @@ def calculate_gradient_density(particules: list[particule], pos) -> Vector2:
 
         if dst > 0:
             slope = p.smoothing_kernel_derivative(dst)
-            dir = dir.elementwise() * slope * MASS * SCALING_FACTOR_DENSITY / dst
+            density = p.density
+            pressure = density_to_pressure(density)
+            dir = dir.elementwise() * pressure * slope * MASS * SCALING_FACTOR_DENSITY / dst * density
             influence += dir
     
     return round(influence, 6)
+
+
+def density_to_pressure(density: float) -> float:
+    return (TARGET_DENSITY - density) * PRESSURE_FACTOR
