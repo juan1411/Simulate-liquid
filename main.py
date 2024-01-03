@@ -96,11 +96,11 @@ def calculate_density(particules: list[particule], pos) -> float:
     if not isinstance(pos, Vector2):
         pos = Vector2(pos)
 
-    density = 0
+    influence = 0
     for p in particules:
-        density += p.smoothing_kernel(pos) * MASS
+        influence += p.smoothing_kernel(pos)
     
-    return round(density, 6) * SCALING_FACTOR_DENSITY
+    return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
 
 
 if __name__ == "__main__":
