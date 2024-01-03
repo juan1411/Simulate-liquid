@@ -15,8 +15,7 @@ class particule:
     def draw(self, screen):
         circle(screen, self.color, self.pos, self.rad)
 
-    def smoothing_kernel(self, sample_pos: Vector2) -> float:
-        dst = (self.pos - sample_pos).magnitude()
+    def smoothing_kernel(self, dst: float) -> float:
         value = 0
 
         if dst < SMOOTHING_RADIUS:
@@ -24,3 +23,12 @@ class particule:
            value = SMOOTHING_RADIUS - dst
 
         return (value ** 3) / VOLUME
+    
+    def smoothing_kernel_derivative(self, dst: float) -> float:
+        value = 0
+
+        if dst < SMOOTHING_RADIUS:
+           self.color = (240, 106, 43)
+           value = SMOOTHING_RADIUS - dst
+
+        return -3 * (value ** 2) / VOLUME

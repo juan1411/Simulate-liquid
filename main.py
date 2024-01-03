@@ -60,8 +60,10 @@ class Engine:
                 self.is_running = False
 
             elif event.type == pg.MOUSEBUTTONDOWN:
-                density = calculate_density(self.particules, event.pos)
-                print(f'{event.pos} - density: {density:.3f}')
+                # density = calculate_density(self.particules, event.pos)
+                # print(f'{event.pos} - density: {density:.3f}')
+                gradient_dens = calculate_gradient_density(self.particules, event.pos)
+                print(f'{event.pos} - gradient density: ({gradient_dens.x:.3f}, {gradient_dens.y:.3f})')
 
             elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
                 GRAVITY += 1
@@ -98,9 +100,27 @@ def calculate_density(particules: list[particule], pos) -> float:
 
     influence = 0
     for p in particules:
-        influence += p.smoothing_kernel(pos)
+        dst = (p.pos - pos).magnitude()
+        influence += p.smoothing_kernel(dst)
     
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
+
+
+def calculate_gradient_density(particules: list[particule], pos) -> Vector2:
+    if not isinstance(pos, Vector2):
+        pos = Vector2(pos)
+
+    influence = Vector2(0, 0)
+    for p in particules:
+        dir = (p.pos - pos)
+        dst = dir.magnitude()
+
+        if dst > 0:
+            slope = p.smoothing_kernel_derivative(dst)
+            dir = dir.elementwise() * slope * MASS * SCALING_FACTOR_DENSITY / dst
+            influence += dir
+    
+    return round(influence, 6)
 
 
 if __name__ == "__main__":
