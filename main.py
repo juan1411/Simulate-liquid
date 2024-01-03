@@ -88,7 +88,7 @@ def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
     particules = []
     for i in range(num_particules):
         # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
-        pos = (100 + (i%per_row - 1) * spacing, 150 + (i//per_row + 1) * spacing)
+        pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
         particules.append(particule(pos))
 
     return particules
