@@ -8,16 +8,16 @@ from constants import *
 
 class particule:
 
-    def __init__(self, pos: tuple | list | np.ndarray, rad: float = RADIUS):
-        self.pos = pos if isinstance(pos, np.ndarray) else np.array(pos)
+    def __init__(self, pos: tuple | list | np.ndarray | Vector2, rad: float = RADIUS):
+        self.pos = pos if isinstance(pos, Vector2) else Vector2(pos[0], pos[1])
         self.rad = rad
         self.vel: Vector2 = Vector2(0, 0)
         self.density: float = None
         self.pressure: Vector2 = Vector2(0, 0)
         self.color = COLOR_WATER
 
-        # valid pos:
-        self.pos = self.pos.reshape((1, 2))
+    def get_pos(self) -> np.ndarray:
+        return np.array(self.pos[:]).reshape((1, 2))
 
     def draw(self, screen):
         circle(screen, self.color, self.pos, self.rad)
@@ -30,6 +30,7 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
 
     return (value ** 3) / VOLUME
 
+@njit
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
@@ -50,8 +51,6 @@ def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
     
 
 def calculate_density_old(positions: np.ndarray, ref: np.ndarray) -> float:
-    ref = ref.reshape((1, 2))
-
     influence = 0
     for p in positions:
         dst = np.sqrt(np.sum( (p - ref)**2, axis=-1))
@@ -62,8 +61,6 @@ def calculate_density_old(positions: np.ndarray, ref: np.ndarray) -> float:
 
 @njit
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
-    ref = ref.reshape((1, 2))
-
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
     # print(dst.shape)
 
