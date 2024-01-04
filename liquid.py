@@ -27,7 +27,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
         - `grid` for equal spacing particules
     """
     spacing = round(RADIUS * 2.5, 0)
-    per_row = int(200/RADIUS)
+    per_row = int(300/RADIUS)
     n_rows = num_particules//per_row + (1 if num_particules%per_row > 0 else 0)
     inicial_x = round(CENTER_TANK.x - per_row * spacing / 2, 0)
     inicial_y = round(CENTER_TANK.y - n_rows * spacing / 2, 0)
@@ -79,12 +79,11 @@ def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: 
     pressure = density_to_pressure(densities)
 
     div = dst * densities
-    div = np.where(div > 0, div, -1)
+    div = np.where(div > 0, div, -1) # NOTE: zero divison Error, -1 is valid?
     multiplier = pressure * slope * MASS * SCALING_FACTOR_DENSITY / div
 
     influences = dir.ravel('F') * np.concatenate([multiplier, multiplier], axis=0)
     influences = influences.reshape( (len(influences)//2, 2), order='F')
-    influences = np.clip(influences, a_min=0, a_max=None)
 
     return np.sum(influences, axis=0)
 

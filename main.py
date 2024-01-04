@@ -69,7 +69,7 @@ class Engine:
             for i in prange(NUM_PARTICULES):
                 self.velocities[i].y += GRAVITY * self.delta_time
                 pressure_vel = self.pressures[i].elementwise() * self.delta_time / self.densities[i]
-                self.velocities[i] += pressure_vel
+                self.velocities[i] += -pressure_vel
 
                 dir = self.velocities[i] * self.delta_time
                 self.positions[i] = np.add(self.positions[i], np.array(dir[:]), dtype=np.float32)
@@ -93,8 +93,8 @@ class Engine:
         # TODO: iterate over all particules is slow, filter!
         for i in prange(NUM_PARTICULES):
             pos = self.positions[i]
-            aux = calculate_pressure_force(aux_pos, aux_den, pos)
-            self.pressures[i] = Vector2(aux[0], aux[1])
+            pressure = calculate_pressure_force(aux_pos, aux_den, pos)
+            self.pressures[i] = Vector2(pressure[0], pressure[1])
 
     def handle_events(self):
         global GRAVITY
