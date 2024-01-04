@@ -1,6 +1,3 @@
-from pygame.math import Vector2
-from pygame.draw import circle
-from numpy import pi
 import numpy as np
 from numba import njit
 
@@ -39,8 +36,11 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
     for i in range(num_particules):
 
         if mode == "random":
-            # TODO: random positions INSIDE the tank
-            pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+            pos = np.random.randint(
+                (TANK[0] +10, TANK[1] +10),
+                (TANK[0] +TANK[2] -20, TANK[1] +TANK[3] -20),
+                2
+            )
 
         elif mode == "grid":
             pos = (inicial_x + (i%per_row - 1) * spacing, inicial_y + (i//per_row + 1) * spacing)
