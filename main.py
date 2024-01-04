@@ -42,7 +42,7 @@ class Engine:
             self.velocities.append(Vector2(0, 0))
             self.densities.append(0)
             self.pressures.append(Vector2(0, 0))
-            
+
         self.update_densities()
         self.update_pressures()
 
@@ -58,10 +58,10 @@ class Engine:
         pg.display.flip()
 
     def update(self):
-        self.delta_time = self.clock.tick() * 0.001
+        self.delta_time = self.clock.tick(60) * 0.001
 
         if self.is_running:
-            self.time = pg.time.get_ticks() * 0.001
+            self.time += self.delta_time
 
             # TODO: too slow, find another way?
             self.update_densities()
