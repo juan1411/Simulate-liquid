@@ -1,4 +1,3 @@
-from liquid import particule
 from constants import *
 
 import numpy as np

@@ -5,22 +5,6 @@ import numpy as np
 from numba import njit
 
 from constants import *
-
-class particule:
-
-    def __init__(self, pos: tuple | list | np.ndarray | Vector2, rad: float = RADIUS):
-        self.pos = pos if isinstance(pos, Vector2) else Vector2(pos[0], pos[1])
-        self.rad = rad
-        self.vel: Vector2 = Vector2(0, 0)
-        self.density: float = None
-        self.pressure: Vector2 = Vector2(0, 0)
-        self.color = COLOR_WATER
-
-    def get_pos(self) -> np.ndarray:
-        return np.array(self.pos[:]).reshape((1, 2))
-
-    def draw(self, screen):
-        circle(screen, self.color, self.pos, self.rad)
     
 
 @njit
@@ -38,14 +22,14 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     return -3 * (value ** 2) / VOLUME
 
 
-def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
+def create_particules(num_particules: int = NUM_PARTICULES) -> list[np.ndarray]:
     spacing = int(RADIUS * 1.5)
     per_row = 130
     particules = []
     for i in range(num_particules):
         pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
         # pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
-        particules.append(particule(pos))
+        particules.append(pos)
 
     return particules
     
