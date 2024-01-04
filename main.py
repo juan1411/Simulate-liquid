@@ -51,14 +51,14 @@ class Engine:
 
         # TODO: too slow, find another way
         self.update_densities()
-        # self.update_pressures()
+        self.update_pressures()
 
         for i in range(len(self.particules)):
             self.particules[i].vel.y += GRAVITY * self.delta_time
             density = self.particules[i].density
-            # pressure = self.particules[i].pressure
-            # pressure_vel = pressure.elementwise() * self.delta_time / density
-            # self.particules[i].vel += pressure_vel
+            pressure = self.particules[i].pressure
+            pressure_vel = -pressure.elementwise() * self.delta_time / density
+            self.particules[i].vel += pressure_vel
 
             self.particules[i].pos += self.particules[i].vel * self.delta_time
             self.particules[i] = tank_collision(self.particules[i])
@@ -74,13 +74,16 @@ class Engine:
             pos = self.particules[i].get_pos()
             self.particules[i].density = calculate_density(positions, pos)
 
+    # @jit(parallel=True)
     def update_pressures(self):
-        # TODO: too slow, find another way
-        # NOTE: iterate over all particules is slow
-        # NOTE: recalculate pressures at every update is slow
-        for i in range(len(self.particules)):
-            pos = self.particules[i].pos
-            self.particules[i].pressure = calculate_pressure_force(self.particules, pos)
+        positions = np.concatenate([p.get_pos() for p in self.particules], axis=0)
+        densities = np.array([p.density for p in self.particules])
+
+        # TODO: iterate over all particules is slow
+        for i in prange(NUM_PARTICULES):
+            pos = self.particules[i].get_pos()
+            aux = calculate_pressure_force(positions, densities, pos)
+            self.particules[i].pressure = Vector2(aux[0], aux[1])
 
     def handle_events(self):
         global GRAVITY

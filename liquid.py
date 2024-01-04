@@ -39,12 +39,12 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
 
 
 def create_particules(num_particules: int = NUM_PARTICULES) -> list[particule]:
-    spacing = 7
+    spacing = int(RADIUS * 1.5)
     per_row = 130
     particules = []
     for i in range(num_particules):
-        # pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
-        pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
+        pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+        # pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
         particules.append(particule(pos))
 
     return particules
@@ -67,24 +67,27 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     influence = np.sum(smoothing_kernel(dst))
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
     
-def calculate_pressure_force(particules: list[particule], pos) -> Vector2:
-    if not isinstance(pos, Vector2):
-        pos = Vector2(pos)
+# @njit
+def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: np.ndarray) -> np.ndarray:
+    assert positions.shape[0] == densities.shape[0]
 
-    influence = Vector2(0, 0)
-    for p in particules:
-        dir = (p.pos - pos)
-        dst = dir.magnitude()
+    dir = (positions - ref)
+    dst = np.sqrt(np.sum(dir**2, axis=-1))
 
-        if dst > 0:
-            slope = smoothing_kernel_derivative(dst)
-            density = p.density
-            pressure = density_to_pressure(density)
-            dir = dir.elementwise() * pressure * slope * MASS * SCALING_FACTOR_DENSITY / dst * density
-            influence += dir
-    
-    return round(influence, 6)
+    slope = smoothing_kernel_derivative(dst)
+    pressure = density_to_pressure(densities)
+
+    div = dst * densities
+    div = np.where(div > 0, div, -1)
+    multiplier = pressure * slope * MASS * SCALING_FACTOR_DENSITY / div
+
+    influences = dir.ravel('F') * np.concatenate([multiplier, multiplier], axis=0)
+    influences = influences.reshape( (len(influences)//2, 2), order='F')
+    influences = np.clip(influences, a_min=0, a_max=None)
+
+    return np.sum(influences, axis=0)
 
 
-def density_to_pressure(density: float) -> float:
+@njit
+def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
     return (TARGET_DENSITY - density) * PRESSURE_FACTOR

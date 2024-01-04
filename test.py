@@ -37,5 +37,34 @@ def time_density():
     print(f'Took {time() - start:.0f} segs to calculate all densities.')
 
 
+def test_pressure():
+    particules = create_particules()
+    positions = np.concatenate([p.get_pos() for p in particules], axis=0)
+
+    densities = []
+    for p in positions:
+        d = calculate_density(positions, p)
+        densities.append(d)
+
+    densities = np.array(densities)
+
+    ref_index = 130 * 5 + 15
+    ref_pos = particules[ref_index].get_pos()
+    ref_pres = calculate_pressure_force(positions, densities, ref_pos)
+    print(f"Pressure of reference: {ref_pres}")
+
+    i = 1
+    while i <= 10:
+        pos = particules[ref_index + i].get_pos()
+        pres = calculate_pressure_force(positions, densities, pos)
+        print(f"{pos[0]} - pressure value {pres}")
+
+        i += 1
+
+    return None
+
+
 # test_density()
-time_density()
+# time_density()
+
+test_pressure()
