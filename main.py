@@ -4,6 +4,7 @@ Pygame stuffs: create window, handle events and updating frames
 
 import pygame as pg
 import numpy as np
+from numba import jit, void
 import sys
 
 from constants import *
@@ -62,13 +63,16 @@ class Engine:
             self.particules[i].draw(self.screen)
 
 
+    # @jit(parallel=True)
     def update_densities(self):
+        positions = np.array([p.pos for p in self.particules])
+
         # TODO: too slow, find another way
         # NOTE: iterate over all particules is slow
         # NOTE: recalculate densities at every update is slow
-        for i in range(len(self.particules)):
+        for i in range(NUM_PARTICULES):
             pos = self.particules[i].pos
-            self.particules[i].density = calculate_density_np(self.particules, pos)
+            self.particules[i].density = calculate_density(positions, pos)
 
     def update_pressures(self):
         # TODO: too slow, find another way
