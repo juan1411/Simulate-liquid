@@ -22,16 +22,33 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     return -3 * (value ** 2) / VOLUME
 
 
-def create_particules(num_particules: int = NUM_PARTICULES) -> list[np.ndarray]:
-    spacing = int(RADIUS * 1.5)
-    per_row = 130
-    particules = []
-    for i in range(num_particules):
-        pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
-        # pos = (100 + (i%per_row - 1) * spacing, 130 + (i//per_row + 1) * spacing)
-        particules.append(pos)
+def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") -> list[np.ndarray]:
+    """Function to create the positions of the particules.
+    
+    `Mode` options:
+        - `random` for random positions inside of the tank
+        - `grid` for equal spacing particules
+    """
+    spacing = round(RADIUS * 2.5, 0)
+    per_row = int(200/RADIUS)
+    n_rows = num_particules//per_row + (1 if num_particules%per_row > 0 else 0)
+    inicial_x = round(CENTER_TANK.x - per_row * spacing / 2, 0)
+    inicial_y = round(CENTER_TANK.y - n_rows * spacing / 2, 0)
 
-    return particules
+    positions = []
+    for i in range(num_particules):
+
+        if mode == "random":
+            # TODO: random positions INSIDE the tank
+            pos = np.random.randint(WIN_RES * 0.1, WIN_RES * 0.9, 2)
+
+        elif mode == "grid":
+            pos = (inicial_x + (i%per_row - 1) * spacing, inicial_y + (i//per_row + 1) * spacing)
+            pos = np.array(pos)
+
+        positions.append(pos)
+
+    return positions
     
 
 def calculate_density_old(positions: np.ndarray, ref: np.ndarray) -> float:
