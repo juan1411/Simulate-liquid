@@ -7,14 +7,14 @@ from numba import njit
 from constants import *
     
 
-@njit
+@njit(cache=True)
 def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
 
     return (value ** 3) / VOLUME
 
-@njit
+@njit(cache=True)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
@@ -43,7 +43,7 @@ def calculate_density_old(positions: np.ndarray, ref: np.ndarray) -> float:
     return round(influence[0] * MASS, 6) * SCALING_FACTOR_DENSITY
 
 
-@njit
+@njit(cache=True)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
     # print(dst.shape)
@@ -72,6 +72,6 @@ def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: 
     return np.sum(influences, axis=0)
 
 
-@njit
+@njit(cache=True)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
     return (TARGET_DENSITY - density) * PRESSURE_FACTOR
