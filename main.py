@@ -36,7 +36,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(NUM_PARTICULES)
+        self.positions = create_particules(NUM_PARTICULES, "grid")
         for _ in range(NUM_PARTICULES):
             self.velocities.append(Vector2(0, 0))
             self.densities.append(0)
@@ -78,17 +78,22 @@ class Engine:
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
+        aux = np.array(self.positions, dtype=np.float32).reshape((NUM_PARTICULES, 2))
+
         # TODO: iterate over all particules is slow, filter!
         for i in prange(NUM_PARTICULES):
             pos = self.positions[i]
-            self.densities[i] = calculate_density(np.array(self.positions), pos)
+            self.densities[i] = calculate_density(aux, pos)
 
     # @jit(parallel=True)
     def update_pressures(self):
+        aux_pos = np.array(self.positions, dtype=np.float32).reshape((NUM_PARTICULES, 2))
+        aux_den = np.array(self.densities, dtype=np.float32)
+
         # TODO: iterate over all particules is slow, filter!
         for i in prange(NUM_PARTICULES):
             pos = self.positions[i]
-            aux = calculate_pressure_force(np.array(self.positions), np.array(self.densities), pos)
+            aux = calculate_pressure_force(aux_pos, aux_den, pos)
             self.pressures[i] = Vector2(aux[0], aux[1])
 
     def handle_events(self):
