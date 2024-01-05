@@ -1,4 +1,4 @@
-from pygame import Vector2
+from pygame import Vector2, Color
 from numpy import pi, array
 
 # CONSTANTS
@@ -16,6 +16,8 @@ SCALING_FACTOR_DENSITY = 2
 TARGET_DENSITY = 1
 PRESSURE_FACTOR = 1
 
+MAX_DENSITY = 50 * (SMOOTHING_RADIUS**2) * MASS * SCALING_FACTOR_DENSITY / VOLUME
+
 TANK = (20, 100, WIN_RES.x-20-20, WIN_RES.y-100-20)
 CENTER_TANK = Vector2(TANK[0] + TANK[2]/2, TANK[1] + TANK[3]/2)
 CENTER_TANK_NUMPY = array(CENTER_TANK[:]).reshape((1, 2))
@@ -23,6 +25,7 @@ CENTER_TANK_NUMPY = array(CENTER_TANK[:]).reshape((1, 2))
 # COLORS
 COLOR_BG = (26, 35, 54)
 COLOR_WATER = (43, 106, 240)
-COLOR_PRES = (240, 43, 43, 50)
+COLOR_PRES_POS = Color(5, 135, 95, 25)
+COLOR_PRES_NEG = Color(135, 85, 5, 25)
 COLOR_TANK = (250, 250, 250)
 COLOR_ARROWS = (43, 240, 43)

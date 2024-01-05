@@ -57,7 +57,9 @@ class Engine:
 
             alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
             alpha_surf.fill((0, 0, 0, 0))
-            pg.draw.circle(alpha_surf, COLOR_PRES, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
+            col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
+            col = col.lerp(col, abs(p.sum()/10000))
+            pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
             self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
 
             pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
