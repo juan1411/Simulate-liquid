@@ -9,14 +9,14 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
 
-    return (value ** 3) / VOLUME
+    return (value ** 2) / VOLUME
 
 @njit(cache=True)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
-    value = SMOOTHING_RADIUS - dst
+    value = dst - SMOOTHING_RADIUS
     value = np.clip(value, a_min=0, a_max=None)
 
-    return -3 * (value ** 2) / VOLUME
+    return value / VOLUME
 
 
 def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") -> list[np.ndarray]:
@@ -49,16 +49,6 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
         positions.append(pos)
 
     return positions
-    
-
-def calculate_density_old(positions: np.ndarray, ref: np.ndarray) -> float:
-    influence = 0
-    for p in positions:
-        dst = np.sqrt(np.sum( (p - ref)**2, axis=-1))
-        influence += smoothing_kernel(dst)
-    
-    return round(influence[0] * MASS, 6) * SCALING_FACTOR_DENSITY
-
 
 @njit(cache=True)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
@@ -68,7 +58,7 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     influence = np.sum(smoothing_kernel(dst))
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
     
-# @njit
+@njit(cache=True)
 def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: np.ndarray) -> np.ndarray:
     assert positions.shape[0] == densities.shape[0]
 
@@ -80,10 +70,11 @@ def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: 
 
     div = dst * densities
     div = np.where(div > 0, div, -1) # NOTE: zero divison Error, -1 is valid?
-    multiplier = pressure * slope * MASS * SCALING_FACTOR_DENSITY / div
+    multiplier = pressure * slope * MASS / div
 
-    influences = dir.ravel('F') * np.concatenate([multiplier, multiplier], axis=0)
-    influences = influences.reshape( (len(influences)//2, 2), order='F')
+    influences = dir.copy()
+    influences[:, 0] = dir[:, 0] * multiplier
+    influences[:, 1] = dir[:, 1] * multiplier
 
     return np.sum(influences, axis=0)
 
