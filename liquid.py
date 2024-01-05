@@ -90,4 +90,4 @@ def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: 
 
 @njit(cache=True)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
-    return (TARGET_DENSITY - density) * PRESSURE_FACTOR
+    return (density - TARGET_DENSITY) * PRESSURE_FACTOR

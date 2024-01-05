@@ -26,7 +26,7 @@ class Engine:
         self.is_running = False
 
         self.clock = pg.time.Clock()
-        self.delta_time = 0
+        self.delta_time = 10
         self.time = 0
 
         self.positions: list[np.ndarray] = []
@@ -36,7 +36,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(NUM_PARTICULES, "grid")
+        self.positions = create_particules(NUM_PARTICULES)
         for _ in range(NUM_PARTICULES):
             self.velocities.append(Vector2(0, 0))
             self.densities.append(0)
@@ -44,13 +44,18 @@ class Engine:
 
         self.update_densities()
         self.update_pressures()
+        for i in range(NUM_PARTICULES):
+            self.update_velocities(i)
 
     def render(self):
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
 
-        for pos in self.positions:
-            pg.draw.circle(self.screen, COLOR_WATER, (pos[0], pos[1]), RADIUS)
+        for i in range(NUM_PARTICULES):
+            a = self.positions[i]
+            p = self.velocities[i] #.elementwise() * 0.5
+            pg.draw.line(self.screen, COLOR_ARROWS, (a[0], a[1]), (a[0] + p.x, a[1] + p.y))
+            pg.draw.circle(self.screen, COLOR_WATER, (a[0], a[1]), RADIUS)
 
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -67,14 +72,16 @@ class Engine:
             self.update_pressures()
 
             for i in prange(NUM_PARTICULES):
-                self.velocities[i].y += GRAVITY * self.delta_time
-                pressure_vel = self.pressures[i].elementwise() * self.delta_time / self.densities[i]
-                self.velocities[i] += -pressure_vel
-
+                self.update_velocities(i)
                 dir = self.velocities[i] * self.delta_time
                 self.positions[i] = np.add(self.positions[i], np.array(dir[:]), dtype=np.float32)
                 self.positions[i], self.velocities[i] = tank_collision(self.positions[i], self.velocities[i])
 
+
+    def update_velocities(self, index: int):
+        self.velocities[index].y += GRAVITY * self.delta_time
+        pressure_vel = self.pressures[index].elementwise() * self.delta_time / self.densities[index]
+        self.velocities[index] += pressure_vel
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
