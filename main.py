@@ -30,22 +30,21 @@ class Engine:
         self.time = 0
 
         self.positions: list[np.ndarray] = []
-        self.velocities: list[Vector2] = []
+        self.velocities: list[np.ndarray] = []
         self.densities: list[float] = []
-        self.pressures: list[Vector2] = []
+        self.pressures: list[np.ndarray] = []
         self.inicial_setup()
 
     def inicial_setup(self):
         self.positions = create_particules(NUM_PARTICULES, "grid")
         for _ in range(NUM_PARTICULES):
-            self.velocities.append(Vector2(0, 0))
+            self.velocities.append(np.zeros((2,)))
             self.densities.append(0)
-            self.pressures.append(Vector2(0, 0))
+            self.pressures.append(np.zeros((2,)))
 
         self.update_densities()
         self.update_pressures()
-        for i in range(NUM_PARTICULES):
-            self.update_velocities(i)
+        self.update_velocities()
 
     def render(self):
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
@@ -54,10 +53,10 @@ class Engine:
 
         for i in range(NUM_PARTICULES):
             a = self.positions[i]
-            p = self.pressures[i].elementwise() * 5
-            pg.draw.line(self.screen, COLOR_ARROWS, (a[0], a[1]), (a[0] + p.x, a[1] + p.y))
-            pg.draw.circle(alpha_surf, COLOR_PRES, (a[0], a[1]), SMOOTHING_RADIUS)
-            pg.draw.circle(self.screen, COLOR_WATER, (a[0], a[1]), RADIUS)
+            p = self.pressures[i] * 5
+            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
+            pg.draw.circle(alpha_surf, COLOR_PRES, a, SMOOTHING_RADIUS)
+            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS)
 
         self.screen.blit(alpha_surf, (0, 0))
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
@@ -73,18 +72,11 @@ class Engine:
             # TODO: too slow, find another way?
             self.update_densities()
             self.update_pressures()
+            self.update_velocities()
 
             for i in prange(NUM_PARTICULES):
-                self.update_velocities(i)
-                dir = self.velocities[i] * self.delta_time
-                self.positions[i] = np.add(self.positions[i], np.array(dir[:]), dtype=np.float32)
+                self.positions[i] += self.velocities[i] * self.delta_time
                 self.positions[i], self.velocities[i] = tank_collision(self.positions[i], self.velocities[i])
-
-
-    def update_velocities(self, index: int):
-        self.velocities[index].y += GRAVITY * self.delta_time
-        pressure_vel = self.pressures[index].elementwise() * self.delta_time / self.densities[index]
-        self.velocities[index] += pressure_vel
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
@@ -105,6 +97,13 @@ class Engine:
             pos = self.positions[i]
             pressure = calculate_pressure_force(aux_pos, aux_den, pos)
             self.pressures[i] = Vector2(pressure[0], pressure[1])
+
+    # @jit(parallel=True, cache=True)
+    def update_velocities(self):
+        for i in prange(NUM_PARTICULES):
+            self.velocities[i][1] += GRAVITY * self.delta_time
+            pressure_vel = self.pressures[i] * self.delta_time / self.densities[i]
+            self.velocities[i] += pressure_vel
 
     def handle_events(self):
         global GRAVITY
@@ -141,17 +140,17 @@ class Engine:
         sys.exit()
 
 
-def tank_collision(pos: np.ndarray, vel: Vector2) -> tuple[np.ndarray, Vector2]:
+def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     new_pos = Vector2(pos[0], pos[1])
     ref = new_pos - CENTER_TANK
 
     if abs(ref.x) + RADIUS >= TANK[2]/2:
-        vel.x *= -0.7
+        vel[0] *= -0.7
         new_pos.x = CENTER_TANK.x + (TANK[2]/2 - RADIUS - 0.001) * np.sign(ref.x)
 
     if abs(ref.y) + RADIUS >= TANK[3]/2:
-        vel.y *= -0.7
+        vel[1] *= -0.7
         new_pos.y = CENTER_TANK.y + (TANK[3]/2 - RADIUS - 0.001) * np.sign(ref.y)
 
     return np.array(new_pos[:]), vel
