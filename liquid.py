@@ -19,7 +19,7 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     return value / VOLUME
 
 
-def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") -> list[np.ndarray]:
+def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") -> np.ndarray:
     """Function to create the positions of the particules.
     
     `Mode` options:
@@ -32,7 +32,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
     inicial_x = round(CENTER_TANK.x - per_row * spacing / 2, 0)
     inicial_y = round(CENTER_TANK.y - n_rows * spacing / 2, 0)
 
-    positions = []
+    positions = np.zeros((num_particules, 2))
     for i in range(num_particules):
 
         if mode == "random":
@@ -46,7 +46,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
             pos = (inicial_x + (i%per_row - 1) * spacing, inicial_y + (i//per_row + 1) * spacing)
             pos = np.array(pos)
 
-        positions.append(pos)
+        positions[i] = pos
 
     return positions
 

@@ -30,18 +30,17 @@ class Engine:
         self.time = 0
 
         self.n_parts = num_particules
-        self.positions: list[np.ndarray] = []
-        self.velocities: list[np.ndarray] = []
-        self.densities: list[float] = []
-        self.pressures: list[np.ndarray] = []
+        self.positions: np.ndarray = None
+        self.velocities: np.ndarray = None
+        self.densities: np.ndarray = None
+        self.pressures: np.ndarray = None
         self.inicial_setup()
 
     def inicial_setup(self):
         self.positions = create_particules(self.n_parts, "grid")
-        for _ in range(self.n_parts):
-            self.velocities.append(np.zeros((2,)))
-            self.densities.append(0)
-            self.pressures.append(np.zeros((2,)))
+        self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
+        self.densities = np.zeros((self.n_parts,), dtype=np.float32)
+        self.pressures = np.zeros((self.n_parts, 2), dtype=np.float32)
 
         self.update_densities()
         self.update_pressures()
@@ -81,23 +80,18 @@ class Engine:
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
-        aux = np.array(self.positions, dtype=np.float32).reshape((self.n_parts, 2))
-
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
-            pos = self.positions[i]
-            self.densities[i] = calculate_density(aux, pos)
+            pos = self.positions[i].ravel()
+            self.densities[i] = calculate_density(self.positions, pos)
 
     @jit(parallel=True, cache=True)
     def update_pressures(self):
-        aux_pos = np.array(self.positions, dtype=np.float32).reshape((self.n_parts, 2))
-        aux_den = np.array(self.densities, dtype=np.float32)
-
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
-            pos = self.positions[i]
-            pressure = calculate_pressure_force(aux_pos, aux_den, pos)
-            self.pressures[i] = Vector2(pressure[0], pressure[1])
+            pos = self.positions[i].ravel()
+            pressure = calculate_pressure_force(self.positions, self.densities, pos)
+            self.pressures[i] = pressure
 
     @jit(parallel=True, cache=True)
     def update_velocities(self):
