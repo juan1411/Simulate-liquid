@@ -53,7 +53,6 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
 @njit(cache=True)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
-    # print(dst.shape)
 
     influence = np.sum(smoothing_kernel(dst))
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
@@ -66,11 +65,11 @@ def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: 
     dst = np.sqrt(np.sum(dir**2, axis=-1))
 
     slope = smoothing_kernel_derivative(dst)
-    pressure = density_to_pressure(densities)
+    pressures = density_to_pressure(densities)
 
     div = dst * densities
     div = np.where(div > 0, div, -1) # NOTE: zero divison Error, -1 is valid?
-    multiplier = pressure * slope * MASS / div
+    multiplier = pressures * slope * MASS / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
