@@ -1,14 +1,8 @@
 from pygame import Vector2
-from numpy import pi
+from numpy import pi, array
 
 # CONSTANTS
 WIN_RES = Vector2((1100, 600))
-TANK = (20, 100, WIN_RES.x-20-20, WIN_RES.y-100-20)
-CENTER_TANK = Vector2(TANK[0] + TANK[2]/2, TANK[1] + TANK[3]/2)
-
-GRAVITY = 0
-TARGET_DENSITY = 1
-PRESSURE_FACTOR = 1
 
 NUM_PARTICULES = 360
 RADIUS = 10
@@ -16,7 +10,15 @@ SMOOTHING_RADIUS = 40
 
 MASS = pi * (RADIUS ** 2)
 VOLUME = pi * (SMOOTHING_RADIUS ** 4) / 6
+
+GRAVITY = 0
 SCALING_FACTOR_DENSITY = 2
+TARGET_DENSITY = 1
+PRESSURE_FACTOR = 1
+
+TANK = (20, 100, WIN_RES.x-20-20, WIN_RES.y-100-20)
+CENTER_TANK = Vector2(TANK[0] + TANK[2]/2, TANK[1] + TANK[3]/2)
+CENTER_TANK_NUMPY = array(CENTER_TANK[:]).reshape((1, 2))
 
 # COLORS
 COLOR_BG = (26, 35, 54)

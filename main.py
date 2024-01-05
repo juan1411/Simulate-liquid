@@ -74,9 +74,8 @@ class Engine:
             self.update_pressures()
             self.update_velocities()
 
-            for i in prange(self.n_parts):
-                self.positions[i] += self.velocities[i] * self.delta_time
-                self.positions[i], self.velocities[i] = tank_collision(self.positions[i], self.velocities[i])
+            self.positions += self.velocities * self.delta_time
+            self.positions, self.velocities = tank_collision(self.positions, self.velocities)
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
@@ -137,18 +136,23 @@ class Engine:
 
 def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
-    new_pos = Vector2(pos[0], pos[1])
-    ref = new_pos - CENTER_TANK
+    ref = pos - CENTER_TANK_NUMPY
+    cond_x = abs(ref[:, 0]) +RADIUS >= TANK[2]/2
+    cond_y = abs(ref[:, 1]) +RADIUS >= TANK[3]/2
 
-    if abs(ref.x) + RADIUS >= TANK[2]/2:
-        vel[0] *= -0.7
-        new_pos.x = CENTER_TANK.x + (TANK[2]/2 - RADIUS - 0.001) * np.sign(ref.x)
+    pos[:, 0] = np.where(cond_x,
+        CENTER_TANK_NUMPY[0, 0] +(TANK[2]/2 -RADIUS -0.001) * np.sign(ref[:, 0]),
+        pos[:, 0]
+    )
+    vel[:, 0] = np.where(cond_x, vel[:, 0] * (-0.7), vel[:, 0])
 
-    if abs(ref.y) + RADIUS >= TANK[3]/2:
-        vel[1] *= -0.7
-        new_pos.y = CENTER_TANK.y + (TANK[3]/2 - RADIUS - 0.001) * np.sign(ref.y)
+    pos[:, 1] = np.where(cond_y,
+        CENTER_TANK_NUMPY[0, 1] +(TANK[3]/2 -RADIUS -0.001) * np.sign(ref[:, 1]),
+        pos[:, 1]
+    )
+    vel[:, 1] = np.where(cond_y, vel[:, 1] * (-0.7), vel[:, 1])
 
-    return np.array(new_pos[:]), vel
+    return pos, vel
 
 
 if __name__ == "__main__":
