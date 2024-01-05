@@ -94,10 +94,9 @@ class Engine:
 
     @jit(parallel=True, cache=True)
     def update_velocities(self):
-        for i in prange(self.n_parts):
-            self.velocities[i][1] += GRAVITY * self.delta_time
-            pressure_vel = self.pressures[i] * self.delta_time / self.densities[i]
-            self.velocities[i] += pressure_vel
+        self.velocities[:, 1] += GRAVITY * self.delta_time
+        self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities
+        self.velocities[:, 1] += self.pressures[:, 1] * self.delta_time / self.densities
 
     def handle_events(self):
         global GRAVITY
