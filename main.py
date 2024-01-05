@@ -49,16 +49,20 @@ class Engine:
     def render(self):
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
-        alpha_surf = pg.Surface(WIN_RES, pg.SRCALPHA)
 
         for i in range(self.n_parts):
+            
             a = self.positions[i]
             p = self.pressures[i] * 5
-            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
-            pg.draw.circle(alpha_surf, COLOR_PRES, a, SMOOTHING_RADIUS)
-            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS)
 
-        self.screen.blit(alpha_surf, (0, 0))
+            alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+            alpha_surf.fill((0, 0, 0, 0))
+            pg.draw.circle(alpha_surf, COLOR_PRES, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
+            self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
+
+            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
+            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS)
+        
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
         pg.display.flip()
