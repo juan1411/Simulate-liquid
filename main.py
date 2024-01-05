@@ -50,32 +50,32 @@ class Engine:
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
         
-        for x in range(int(TANK[0]), int(TANK[0] +TANK[2]), 9):
-            for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), 9):
-                pos = np.array((x+5, y+5)).reshape((1, 2))
-                d = calculate_density(self.positions, pos)
-                p = calculate_pressure_force(self.positions, self.densities, pos)
-                s = p.sum()
-                end = ( x +p[0]/s, y +p[1]/s )
+        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]), 9):
+        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), 9):
+        #         pos = np.array((x+5, y+5)).reshape((1, 2))
+        #         d = calculate_density(self.positions, pos)
+        #         p = calculate_pressure_force(self.positions, self.densities, pos)
+        #         s = p.sum()
+        #         end = ( x +p[0]/s, y +p[1]/s )
 
-                pg.draw.rect(self.screen, (240*d, 240*d, 240*d), (x, y, 9, 9))
-                pg.draw.circle(self.screen, COLOR_ARROWS, (x+5, y+5), 1)
-                pg.draw.line(self.screen, COLOR_ARROWS, (x+5, y+5), end)
+        #         pg.draw.rect(self.screen, (240*d, 240*d, 240*d), (x, y, 9, 9))
+        #         pg.draw.circle(self.screen, COLOR_ARROWS, (x+5, y+5), 1)
+        #         pg.draw.line(self.screen, COLOR_ARROWS, (x+5, y+5), end)
 
-        # for i in range(self.n_parts):
+        for i in range(self.n_parts):
             
-        #     a = self.positions[i]
-        #     p = self.pressures[i] * 0.5
+            a = self.positions[i]
+            p = self.pressures[i] * 0.1
 
-        #     # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
-        #     # alpha_surf.fill((0, 0, 0, 0))
-        #     # col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
-        #     # col = col.lerp(col, abs(p.sum()/10000))
-        #     # pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
-        #     # self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
+            # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+            # alpha_surf.fill((0, 0, 0, 0))
+            # col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
+            # col = col.lerp(col, abs(p.sum()/10000))
+            # pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
+            # self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
 
-        #     # pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
-        #     pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
+            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
+            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -109,7 +109,7 @@ class Engine:
         for i in prange(self.n_parts):
             pos = self.positions[i].ravel()
             pressure = calculate_pressure_force(self.positions, self.densities, pos)
-            self.pressures[i] = pressure
+            self.pressures[i] += -pressure
 
     @jit(parallel=True, cache=True)
     def update_velocities(self):
