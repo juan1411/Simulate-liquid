@@ -4,19 +4,20 @@ from liquid import *
 
 
 def test_density():
-    positions = create_particules()
+    num = 360
+    positions = create_particules(num, "grid")
     positions = np.concatenate(positions)
 
-    ref_index = 130 * 5 + 15
+    ref_index = int(300/RADIUS) * 3 + 10
     ref_pos = positions[ref_index]
     ref_dens = calculate_density(positions, ref_pos)
-    print(f"Density of reference: {ref_dens:.4f}")
+    print(f"Density of reference: \n{ref_pos} - density value {ref_dens:.4f}\n")
 
     i = 1
-    while i <= 10:
+    while i < 10:
         pos = positions[ref_index + i]
         d = calculate_density(positions, pos)
-        print(f"{pos[0]} - density value {d:.4f}")
+        print(f"{pos} - density value {d:.4f}")
 
         i += 1
 
@@ -38,8 +39,8 @@ def time_density():
 
 
 def test_pressure():
-    num = 10000
-    positions = create_particules(num)
+    num = 360
+    positions = create_particules(num, "grid")
     positions = np.array(positions)
 
     densities = []
@@ -49,16 +50,16 @@ def test_pressure():
 
     densities = np.array(densities)
 
-    ref_index = 130 * 5 + 15
+    ref_index = int(300/RADIUS) * 0 + 2
     ref_pos = positions[ref_index]
     ref_pres = calculate_pressure_force(positions, densities, ref_pos)
-    print(f"Pressure of reference: {ref_pres}")
+    print(f"Pressure of reference: \n{ref_pos} - pressure value {ref_pres}\n")
 
     i = 1
-    while i <= 10:
+    while i < 10:
         pos = positions[ref_index + i]
         pres = calculate_pressure_force(positions, densities, pos)
-        print(f"{pos[0]} - pressure value {pres}")
+        # print(f"{pos} - pressure value {pres}")
 
         i += 1
 
