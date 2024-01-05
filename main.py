@@ -26,7 +26,7 @@ class Engine:
         self.is_running = False
 
         self.clock = pg.time.Clock()
-        self.delta_time = 10
+        self.delta_time = 1
         self.time = 0
 
         self.positions: list[np.ndarray] = []
@@ -36,7 +36,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(NUM_PARTICULES)
+        self.positions = create_particules(NUM_PARTICULES, "grid")
         for _ in range(NUM_PARTICULES):
             self.velocities.append(Vector2(0, 0))
             self.densities.append(0)
@@ -50,13 +50,16 @@ class Engine:
     def render(self):
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
+        alpha_surf = pg.Surface(WIN_RES, pg.SRCALPHA)
 
         for i in range(NUM_PARTICULES):
             a = self.positions[i]
-            p = self.velocities[i] #.elementwise() * 0.5
+            p = self.pressures[i].elementwise() * 5
             pg.draw.line(self.screen, COLOR_ARROWS, (a[0], a[1]), (a[0] + p.x, a[1] + p.y))
+            pg.draw.circle(alpha_surf, COLOR_PRES, (a[0], a[1]), SMOOTHING_RADIUS)
             pg.draw.circle(self.screen, COLOR_WATER, (a[0], a[1]), RADIUS)
 
+        self.screen.blit(alpha_surf, (0, 0))
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
         pg.display.flip()
@@ -92,7 +95,7 @@ class Engine:
             pos = self.positions[i]
             self.densities[i] = calculate_density(aux, pos)
 
-    # @jit(parallel=True)
+    @jit(parallel=True, cache=True)
     def update_pressures(self):
         aux_pos = np.array(self.positions, dtype=np.float32).reshape((NUM_PARTICULES, 2))
         aux_den = np.array(self.densities, dtype=np.float32)
