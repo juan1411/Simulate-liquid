@@ -15,7 +15,7 @@ from liquid import *
 
 class Engine:
 
-    def __init__(self):
+    def __init__(self, num_particules: int = NUM_PARTICULES):
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
@@ -29,6 +29,7 @@ class Engine:
         self.delta_time = 1
         self.time = 0
 
+        self.n_parts = num_particules
         self.positions: list[np.ndarray] = []
         self.velocities: list[np.ndarray] = []
         self.densities: list[float] = []
@@ -36,8 +37,8 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(NUM_PARTICULES, "grid")
-        for _ in range(NUM_PARTICULES):
+        self.positions = create_particules(self.n_parts, "grid")
+        for _ in range(self.n_parts):
             self.velocities.append(np.zeros((2,)))
             self.densities.append(0)
             self.pressures.append(np.zeros((2,)))
@@ -51,7 +52,7 @@ class Engine:
         self.screen.fill(COLOR_BG)
         alpha_surf = pg.Surface(WIN_RES, pg.SRCALPHA)
 
-        for i in range(NUM_PARTICULES):
+        for i in range(self.n_parts):
             a = self.positions[i]
             p = self.pressures[i] * 5
             pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
@@ -74,33 +75,33 @@ class Engine:
             self.update_pressures()
             self.update_velocities()
 
-            for i in prange(NUM_PARTICULES):
+            for i in prange(self.n_parts):
                 self.positions[i] += self.velocities[i] * self.delta_time
                 self.positions[i], self.velocities[i] = tank_collision(self.positions[i], self.velocities[i])
 
     @jit(parallel=True, cache=True)
     def update_densities(self):
-        aux = np.array(self.positions, dtype=np.float32).reshape((NUM_PARTICULES, 2))
+        aux = np.array(self.positions, dtype=np.float32).reshape((self.n_parts, 2))
 
         # TODO: iterate over all particules is slow, filter!
-        for i in prange(NUM_PARTICULES):
+        for i in prange(self.n_parts):
             pos = self.positions[i]
             self.densities[i] = calculate_density(aux, pos)
 
     @jit(parallel=True, cache=True)
     def update_pressures(self):
-        aux_pos = np.array(self.positions, dtype=np.float32).reshape((NUM_PARTICULES, 2))
+        aux_pos = np.array(self.positions, dtype=np.float32).reshape((self.n_parts, 2))
         aux_den = np.array(self.densities, dtype=np.float32)
 
         # TODO: iterate over all particules is slow, filter!
-        for i in prange(NUM_PARTICULES):
+        for i in prange(self.n_parts):
             pos = self.positions[i]
             pressure = calculate_pressure_force(aux_pos, aux_den, pos)
             self.pressures[i] = Vector2(pressure[0], pressure[1])
 
-    # @jit(parallel=True, cache=True)
+    @jit(parallel=True, cache=True)
     def update_velocities(self):
-        for i in prange(NUM_PARTICULES):
+        for i in prange(self.n_parts):
             self.velocities[i][1] += GRAVITY * self.delta_time
             pressure_vel = self.pressures[i] * self.delta_time / self.densities[i]
             self.velocities[i] += pressure_vel
