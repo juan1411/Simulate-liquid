@@ -37,7 +37,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(self.n_parts)
+        self.positions = create_particules(self.n_parts, "grid")
         self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.densities = np.zeros((self.n_parts,), dtype=np.float32)
         self.pressures = np.zeros((self.n_parts, 2), dtype=np.float32)
@@ -54,11 +54,13 @@ class Engine:
         #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), 9):
         #         pos = np.array((x+5, y+5)).reshape((1, 2))
         #         d = calculate_density(self.positions, pos)
-        #         p = calculate_pressure_force(self.positions, self.densities, pos)
+        #         p = calculate_pressure_force(self.positions, self.densities, pos, d)
         #         s = p.sum()
         #         end = ( x +p[0]/s, y +p[1]/s )
 
-        #         pg.draw.rect(self.screen, (240*d, 240*d, 240*d), (x, y, 9, 9))
+        #         col = pg.Color((0,0,0)).lerp(pg.Color(255, 255, 255), d/10)
+
+        #         pg.draw.rect(self.screen, col, (x, y, 9, 9))
         #         pg.draw.circle(self.screen, COLOR_ARROWS, (x+5, y+5), 1)
         #         pg.draw.line(self.screen, COLOR_ARROWS, (x+5, y+5), end)
 
@@ -108,14 +110,15 @@ class Engine:
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
             pos = self.positions[i].ravel()
-            pressure = calculate_pressure_force(self.positions, self.densities, pos)
-            self.pressures[i] += -pressure
+            dens = self.densities[i]
+            pressure = calculate_pressure_force(self.positions, self.densities, pos, dens)
+            self.pressures[i] += pressure
 
     @jit(parallel=True, cache=True)
     def update_velocities(self):
         self.velocities[:, 1] += GRAVITY * self.delta_time
-        self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities
-        self.velocities[:, 1] += self.pressures[:, 1] * self.delta_time / self.densities
+        self.velocities[:, 0] += -self.pressures[:, 0] * self.delta_time / self.densities
+        self.velocities[:, 1] += -self.pressures[:, 1] * self.delta_time / self.densities
 
     def handle_events(self):
         global GRAVITY

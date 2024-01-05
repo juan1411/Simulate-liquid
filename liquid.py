@@ -58,18 +58,21 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
     
 @njit(cache=True)
-def calculate_pressure_force(positions: np.ndarray, densities: np.ndarray, ref: np.ndarray) -> np.ndarray:
+def calculate_pressure_force(
+    positions: np.ndarray, densities: np.ndarray,
+    ref_pos: np.ndarray, ref_dens: np.ndarray
+) -> np.ndarray:
     assert positions.shape[0] == densities.shape[0]
 
-    dir = (positions - ref)
+    dir = (positions - ref_pos)
     dst = np.sqrt(np.sum(dir**2, axis=-1))
 
     slope = smoothing_kernel_derivative(dst)
-    pressures = density_to_pressure(densities)
+    shared_pressure = density_to_pressure(densities) + density_to_pressure(ref_dens)
 
     div = dst * densities
     div = np.where(div > 0, div, div-1) # NOTE: zero divison Error, -1 is valid?
-    multiplier = pressures * slope * MASS / div
+    multiplier = shared_pressure * 0.5 * slope * MASS / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
