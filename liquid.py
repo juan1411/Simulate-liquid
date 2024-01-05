@@ -29,7 +29,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
     spacing = round(RADIUS * 2.5, 0)
     per_row = int(300/RADIUS)
     n_rows = num_particules//per_row + (1 if num_particules%per_row > 0 else 0)
-    inicial_x = round(CENTER_TANK.x - per_row * spacing / 2, 0)
+    inicial_x = round(CENTER_TANK.x - (per_row -1) * spacing / 2, 0)
     inicial_y = round(CENTER_TANK.y - n_rows * spacing / 2, 0)
 
     positions = np.zeros((num_particules, 2))
@@ -43,7 +43,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
             )
 
         elif mode == "grid":
-            pos = (inicial_x + (i%per_row - 1) * spacing, inicial_y + (i//per_row + 1) * spacing)
+            pos = (inicial_x + (i%per_row) * spacing, inicial_y + (i//per_row +1) * spacing)
             pos = np.array(pos)
 
         positions[i] = pos
