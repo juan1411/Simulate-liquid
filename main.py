@@ -37,7 +37,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(self.n_parts, "grid")
+        self.positions = create_particules(self.n_parts)
         self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.densities = np.zeros((self.n_parts,), dtype=np.float32)
         self.pressures = np.zeros((self.n_parts, 2), dtype=np.float32)
@@ -50,34 +50,33 @@ class Engine:
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
         
-        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]), 9):
-        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), 9):
-        #         pos = np.array((x+5, y+5)).reshape((1, 2))
-        #         d = calculate_density(self.positions, pos)
-        #         p = calculate_pressure_force(self.positions, self.densities, pos, d)
-        #         s = p.sum()
-        #         end = ( x +p[0]/s, y +p[1]/s )
+        for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-14), 15):
+            for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-14), 15):
+                pos = np.array((x+7, y+7)).reshape((1, 2))
+                d = calculate_density(self.positions, pos)
+                p = calculate_pressure_force(self.positions, self.densities, pos, d)
+                s = p.sum()
+                end = ( x +p[0]/s, y +p[1]/s )
 
-        #         col = pg.Color((0,0,0)).lerp(pg.Color(255, 255, 255), d/10)
+                col = get_density_color(d)
+                pg.draw.rect(self.screen, col, (x, y, 15, 15))
+                # pg.draw.circle(self.screen, COLOR_ARROWS, (x+7, y+7), 2)
+                # pg.draw.line(self.screen, COLOR_ARROWS, (x+7, y+7), end)
 
-        #         pg.draw.rect(self.screen, col, (x, y, 9, 9))
-        #         pg.draw.circle(self.screen, COLOR_ARROWS, (x+5, y+5), 1)
-        #         pg.draw.line(self.screen, COLOR_ARROWS, (x+5, y+5), end)
-
-        for i in range(self.n_parts):
+        # for i in range(self.n_parts):
             
-            a = self.positions[i]
-            p = self.pressures[i] * 0.1
+        #     a = self.positions[i]
+        #     p = self.pressures[i] * 0.1
 
-            # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
-            # alpha_surf.fill((0, 0, 0, 0))
-            # col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
-            # col = col.lerp(col, abs(p.sum()/10000))
-            # pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
-            # self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
+        #     # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+        #     # alpha_surf.fill((0, 0, 0, 0))
+        #     # col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
+        #     # col = col.lerp(col, abs(p.sum()/10000))
+        #     # pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
+        #     # self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
 
-            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
-            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
+        #     pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
+        #     pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -117,8 +116,8 @@ class Engine:
     @jit(parallel=True, cache=True)
     def update_velocities(self):
         self.velocities[:, 1] += GRAVITY * self.delta_time
-        self.velocities[:, 0] += -self.pressures[:, 0] * self.delta_time / self.densities
-        self.velocities[:, 1] += -self.pressures[:, 1] * self.delta_time / self.densities
+        self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities
+        self.velocities[:, 1] += self.pressures[:, 1] * self.delta_time / self.densities
 
     def handle_events(self):
         global GRAVITY
@@ -175,6 +174,22 @@ def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.nda
 
     return pos, vel
 
+def get_density_color(density: float) -> pg.Color:
+    value = density - TARGET_DENSITY
+    ref = TARGET_DENSITY*0.25
+
+    if abs(value) < ref: # -ref < value < +ref
+        col = pg.Color((0,0,0)).lerp(pg.Color(250, 250, 250), (value +ref) / (2 * ref))
+    
+    elif value >= ref: # ref <= value <= MAX_DENSITY
+        aux = np.log(value/ref)
+        aux = aux / np.log(MAX_DENSITY/ref)
+        col = pg.Color(250, 250, 250).lerp(COLOR_MORE_DENSITY, aux)
+
+    else: # 0 <= density <= TARGET_DENSITY - ref
+        col = COLOR_LESS_DENSITY.lerp(pg.Color(0, 0, 0), density / (TARGET_DENSITY - ref))
+
+    return col
 
 if __name__ == "__main__":
     filterwarnings("ignore")
