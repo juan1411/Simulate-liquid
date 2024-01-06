@@ -2,21 +2,6 @@ import numpy as np
 from numba import njit
 
 from constants import *
-    
-
-@njit(cache=True)
-def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
-    value = SMOOTHING_RADIUS - dst
-    value = np.clip(value, a_min=0, a_max=None)
-
-    return (value ** 2) / VOLUME
-
-@njit(cache=True)
-def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
-    value = dst - SMOOTHING_RADIUS
-    value = np.clip(value, a_min=None, a_max=0)
-
-    return value / VOLUME
 
 
 def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") -> np.ndarray:
@@ -49,18 +34,34 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
         positions[i] = pos
 
     return positions
+    
+
+@njit(cache=True)
+def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
+    value = SMOOTHING_RADIUS - dst
+    value = np.clip(value, a_min=0, a_max=None)
+
+    return (value ** 2) / VOLUME
+
+@njit(cache=True)
+def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
+    value = dst - SMOOTHING_RADIUS
+    value = np.clip(value, a_min=None, a_max=0)
+
+    return 2 * value * FACTOR_SLOPE / VOLUME
+
 
 @njit(cache=True)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
 
     influence = np.sum(smoothing_kernel(dst))
-    return round(influence * MASS, 6) * SCALING_FACTOR_DENSITY
+    return influence * MASS * FACTOR_DENSITY
     
 @njit(cache=True)
 def calculate_pressure_force(
     positions: np.ndarray, densities: np.ndarray,
-    ref_pos: np.ndarray, ref_dens: np.ndarray
+    ref_pos: np.ndarray, ref_dens: float
 ) -> np.ndarray:
     assert positions.shape[0] == densities.shape[0]
 
@@ -68,19 +69,28 @@ def calculate_pressure_force(
     dst = np.sqrt(np.sum(dir**2, axis=-1))
 
     slope = smoothing_kernel_derivative(dst)
-    shared_pressure = density_to_pressure(densities) + density_to_pressure(ref_dens)
+    shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
 
     div = dst * densities
     div = np.where(div > 0, div, np.random.randint(5, 10, div.shape)) # NOTE: zero divison Error
-    multiplier = shared_pressure * (-0.5) * slope * MASS / div
+    multiplier = shared_pressure * slope * MASS / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
     influences[:, 1] = dir[:, 1] * multiplier
+
+    # NOTE: help to debugging
+    # ind = [0, 1, 2, 30, 31, 32, 60, 61, 62]
+    # print('Dirs:', dir[ind])
+    # print("Dists:", dst[ind])
+    # print("Dens:", densities[ind])
+    # print("Slope:", slope[ind])
+    # print("Pres:", shared_pressure[ind])
+    # print("Res", influences[ind])
 
     return np.sum(influences, axis=0)
 
 
 @njit(cache=True)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
-    return (density - TARGET_DENSITY) * PRESSURE_FACTOR
+    return (density - TARGET_DENSITY) * FACTOR_PRESSURE

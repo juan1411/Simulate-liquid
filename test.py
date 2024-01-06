@@ -50,20 +50,20 @@ def test_pressure():
 
     densities = np.array(densities)
 
-    ref_index = int(300/RADIUS) * 0 + 2
+    ref_index = int(300/RADIUS) * 0 + 0
     ref_pos = positions[ref_index]
     ref_dens= densities[ref_index]
     ref_pres = calculate_pressure_force(positions, densities, ref_pos, ref_dens)
     print(f"Pressure of reference: \n{ref_pos} - pressure value {ref_pres}\n")
 
-    i = 1
-    while i < 10:
-        pos = positions[ref_index + i]
-        dens= densities[ref_index + i]
-        pres = calculate_pressure_force(positions, densities, pos, dens)
-        print(f"{pos} - pressure value {pres}")
+    # i = 1
+    # while i < 10:
+    #     pos = positions[ref_index + i]
+    #     dens= densities[ref_index + i]
+    #     pres = calculate_pressure_force(positions, densities, pos, dens)
+    #     print(f"{pos} - pressure value {pres}")
 
-        i += 1
+    #     i += 1
 
     return None
 
