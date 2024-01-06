@@ -71,8 +71,8 @@ def calculate_pressure_force(
     shared_pressure = density_to_pressure(densities) + density_to_pressure(ref_dens)
 
     div = dst * densities
-    div = np.where(div > 0, div, div-1) # NOTE: zero divison Error, -1 is valid?
-    multiplier = shared_pressure * 0.5 * slope * MASS / div
+    div = np.where(div > 0, div, np.random.randint(5, 10, div.shape)) # NOTE: zero divison Error
+    multiplier = shared_pressure * (-0.5) * slope * MASS / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
