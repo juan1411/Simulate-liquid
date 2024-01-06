@@ -88,15 +88,15 @@ class Engine:
         if self.is_running:
             self.time += self.delta_time
 
+            self.positions += self.velocities * self.delta_time
+            self.positions, self.velocities = tank_collision(self.positions, self.velocities)
+            
             # TODO: too slow, find another way?
             self.update_densities()
             self.update_pressures()
             self.update_velocities()
 
-            self.positions += self.velocities * self.delta_time
-            self.positions, self.velocities = tank_collision(self.positions, self.velocities)
-
-    @jit(parallel=True, cache=True)
+    @jit(parallel=True, cache=not DEBUG)
     def update_densities(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
@@ -104,7 +104,7 @@ class Engine:
             density = calculate_density(self.positions, pos)
             self.densities[i] = density
 
-    @jit(parallel=True, cache=True)
+    @jit(parallel=True, cache=not DEBUG)
     def update_pressures(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
@@ -113,7 +113,7 @@ class Engine:
             pressure = calculate_pressure_force(self.positions, self.densities, pos, dens)
             self.pressures[i] += pressure
 
-    @jit(parallel=True, cache=True)
+    @jit(parallel=True, cache=not DEBUG)
     def update_velocities(self):
         self.velocities[:, 1] += GRAVITY * self.delta_time
         self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities

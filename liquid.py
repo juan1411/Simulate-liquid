@@ -36,14 +36,14 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
     return positions
     
 
-@njit(cache=True)
+@njit(cache = not DEBUG)
 def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
 
     return (value ** 2) / VOLUME
 
-@njit(cache=True)
+@njit(cache = not DEBUG)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     value = dst - SMOOTHING_RADIUS
     value = np.clip(value, a_min=None, a_max=0)
@@ -51,14 +51,14 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     return 2 * value * FACTOR_SLOPE / VOLUME
 
 
-@njit(cache=True)
+@njit(cache = not DEBUG)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
 
     influence = np.sum(smoothing_kernel(dst))
     return influence * MASS * FACTOR_DENSITY
     
-@njit(cache=True)
+@njit(cache = not DEBUG)
 def calculate_pressure_force(
     positions: np.ndarray, densities: np.ndarray,
     ref_pos: np.ndarray, ref_dens: float
@@ -79,7 +79,7 @@ def calculate_pressure_force(
     influences[:, 0] = dir[:, 0] * multiplier
     influences[:, 1] = dir[:, 1] * multiplier
 
-    # NOTE: help to debugging
+    # # NOTE: help to debugging
     # ind = [0, 1, 2, 30, 31, 32, 60, 61, 62]
     # print('Dirs:', dir[ind])
     # print("Dists:", dst[ind])
@@ -91,6 +91,6 @@ def calculate_pressure_force(
     return np.sum(influences, axis=0)
 
 
-@njit(cache=True)
+@njit(cache = not DEBUG)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
     return (density - TARGET_DENSITY) * FACTOR_PRESSURE
