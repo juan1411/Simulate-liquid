@@ -45,10 +45,10 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
 
 @njit(cache = not DEBUG)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
-    value = dst - SMOOTHING_RADIUS
-    value = np.clip(value, a_min=None, a_max=0)
+    value = SMOOTHING_RADIUS - dst
+    value = np.clip(value, a_min=0, a_max=None)
 
-    return 2 * value * FACTOR_SLOPE / VOLUME
+    return (-2) * value * FACTOR_SLOPE / VOLUME
 
 
 @njit(cache = not DEBUG)
@@ -58,6 +58,12 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     influence = np.sum(smoothing_kernel(dst))
     return influence * MASS * FACTOR_DENSITY
     
+    
+@njit(cache = not DEBUG)
+def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
+    return (density - TARGET_DENSITY) * FACTOR_PRESSURE
+
+
 @njit(cache = not DEBUG)
 def calculate_pressure_force(
     positions: np.ndarray, densities: np.ndarray,
@@ -72,7 +78,8 @@ def calculate_pressure_force(
     shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
 
     div = dst * densities
-    div = np.where(div > 0, div, np.random.randint(5, 10, div.shape)) # NOTE: zero divison Error
+    div = np.where(div > 0, div, div+1)
+    # NOTE: np.where for zero divison error
     multiplier = shared_pressure * slope * MASS / div
 
     influences = dir.copy()
@@ -89,8 +96,3 @@ def calculate_pressure_force(
     # print("Res", influences[ind])
 
     return np.sum(influences, axis=0)
-
-
-@njit(cache = not DEBUG)
-def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
-    return (density - TARGET_DENSITY) * FACTOR_PRESSURE

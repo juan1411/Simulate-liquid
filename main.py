@@ -50,33 +50,33 @@ class Engine:
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
         
-        for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-14), 15):
-            for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-14), 15):
-                pos = np.array((x+7, y+7)).reshape((1, 2))
-                d = calculate_density(self.positions, pos)
-                p = calculate_pressure_force(self.positions, self.densities, pos, d)
-                s = p.sum()
-                end = ( x +p[0]/s, y +p[1]/s )
+        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-14), 15):
+        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-14), 15):
+        #         pos = np.array((x+7, y+7)).reshape((1, 2))
+        #         d = calculate_density(self.positions, pos)
+        #         p = calculate_pressure_force(self.positions, self.densities, pos, d)
+        #         s = p.sum()
+        #         end = ( x +(self.delta_time *p[0]/s), y +(self.delta_time *p[1]/s) )
 
-                col = get_density_color(d)
-                pg.draw.rect(self.screen, col, (x, y, 15, 15))
-                # pg.draw.circle(self.screen, COLOR_ARROWS, (x+7, y+7), 2)
-                # pg.draw.line(self.screen, COLOR_ARROWS, (x+7, y+7), end)
+        #         col = get_density_color(d)
+        #         pg.draw.rect(self.screen, col, (x, y, 15, 15))
+        #         pg.draw.circle(self.screen, COLOR_ARROWS, (x+7, y+7), 2)
+        #         pg.draw.line(self.screen, COLOR_ARROWS, (x+7, y+7), end)
 
-        # for i in range(self.n_parts):
+        for i in range(self.n_parts):
             
-        #     a = self.positions[i]
-        #     p = self.pressures[i] * 0.1
+            a = self.positions[i]
+            p = self.pressures[i] * 0.5
 
-        #     # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
-        #     # alpha_surf.fill((0, 0, 0, 0))
-        #     # col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
-        #     # col = col.lerp(col, abs(p.sum()/10000))
-        #     # pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
-        #     # self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
+            alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+            alpha_surf.fill((0, 0, 0, 0))
+            col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
+            col = col.lerp(col, abs(p.sum()/10000))
+            pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
+            self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
 
-        #     pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
-        #     pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
+            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
+            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -179,15 +179,16 @@ def get_density_color(density: float) -> pg.Color:
     ref = TARGET_DENSITY*0.25
 
     if abs(value) < ref: # -ref < value < +ref
-        col = pg.Color((0,0,0)).lerp(pg.Color(250, 250, 250), (value +ref) / (2 * ref))
+        col = pg.Color(250, 250, 250)
     
     elif value >= ref: # ref <= value <= MAX_DENSITY
-        aux = np.log(value/ref)
-        aux = aux / np.log(MAX_DENSITY/ref)
-        col = pg.Color(250, 250, 250).lerp(COLOR_MORE_DENSITY, aux)
+        aux = (value - ref) / (MAX_DENSITY - ref)
+        col = pg.Color(250, 250, 250).lerp(COLOR_MORE_ATRIB, aux)
 
     else: # 0 <= density <= TARGET_DENSITY - ref
-        col = COLOR_LESS_DENSITY.lerp(pg.Color(0, 0, 0), density / (TARGET_DENSITY - ref))
+        aux = np.log(density +1)
+        aux = aux / np.log(TARGET_DENSITY -ref +1)
+        col = COLOR_LESS_ATRIB.lerp(pg.Color(250, 250, 250), aux)
 
     return col
 
