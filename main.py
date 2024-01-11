@@ -50,33 +50,37 @@ class Engine:
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
         
-        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-14), 15):
-        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-14), 15):
-        #         pos = np.array((x+7, y+7)).reshape((1, 2))
-        #         d = calculate_density(self.positions, pos)
-        #         p = calculate_pressure_force(self.positions, self.densities, pos, d)
+        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
+        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
+        #         pos = np.array((x+3, y+3)) #.reshape((1, 2))
+        #         # d = calculate_density(self.positions, pos)
+        #         exemp = exemple_func(pos[0], pos[1])
+        #         p = calculate_pressure_force(self.positions, self.densities, pos, 0)
         #         s = p.sum()
         #         end = ( x +(self.delta_time *p[0]/s), y +(self.delta_time *p[1]/s) )
 
-        #         col = get_density_color(d)
-        #         pg.draw.rect(self.screen, col, (x, y, 15, 15))
-        #         pg.draw.circle(self.screen, COLOR_ARROWS, (x+7, y+7), 2)
-        #         pg.draw.line(self.screen, COLOR_ARROWS, (x+7, y+7), end)
+        #         # col = get_density_color(d)
+        #         col = get_exemple_color(exemp)
+        #         pg.draw.rect(self.screen, col, (x, y, 5, 5))
+        #         # pg.draw.circle(self.screen, (0,0,0), (x+3, y+3), 2)
+        #         # pg.draw.line(self.screen, (0,0,0), (x+3, y+3), end)
 
+        # NOTE: smoothing radius
         for i in range(self.n_parts):
-            
-            a = self.positions[i]
-            p = self.pressures[i] * 0.5
+            pos = self.positions[i]
 
             alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
             alpha_surf.fill((0, 0, 0, 0))
-            col = COLOR_PRES_NEG if p.sum() < 0 else COLOR_PRES_POS
-            col = col.lerp(col, abs(p.sum()/10000))
-            pg.draw.circle(alpha_surf, col, (SMOOTHING_RADIUS, SMOOTHING_RADIUS), SMOOTHING_RADIUS)
-            self.screen.blit(alpha_surf, a-SMOOTHING_RADIUS)
+            col = get_exemple_color(exemple_func(pos[0], pos[1]))
+            draw_smooth_circle(alpha_surf, col)
+            self.screen.blit(alpha_surf, pos-SMOOTHING_RADIUS)
 
-            pg.draw.line(self.screen, COLOR_ARROWS, a, a+p)
-            pg.draw.circle(self.screen, COLOR_WATER, a, RADIUS, 2)
+        # NOTE: particules
+        for i in range(self.n_parts):
+            pos = self.positions[i]
+            # pre = self.pressures[i] * 0.5
+            # pg.draw.line(self.screen, COLOR_ARROWS, pos, pos+pre)
+            pg.draw.circle(self.screen, (0,0,0), pos, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -191,6 +195,42 @@ def get_density_color(density: float) -> pg.Color:
         col = COLOR_LESS_ATRIB.lerp(pg.Color(250, 250, 250), aux)
 
     return col
+
+def get_pressure_color(pressure: float) -> pg.Color:
+    ref = 0.05
+
+    if abs(pressure) < ref: # -ref < pressure < +ref
+        col = pg.Color(250, 250, 250)
+    
+    elif pressure >= ref: # ref <= pressure <= ???
+        aux = np.log(pressure/ref)
+        aux = aux / np.log(1/ref)
+        col = pg.Color(250, 250, 250).lerp(COLOR_MORE_ATRIB, aux)
+
+    else: # ??? <= pressure <= -ref
+        aux = np.log(-pressure/ref)
+        aux = aux / np.log(1/ref)
+        col = pg.Color(250, 250, 250).lerp(COLOR_LESS_ATRIB, aux)
+
+    return col
+
+def get_exemple_color(value: float) -> pg.Color:    
+    # -1 <= value <= 1
+    return COLOR_LESS_ATRIB.lerp(COLOR_MORE_ATRIB, (1+value)/2)
+
+def draw_smooth_circle(
+    surface, color: pg.Color,
+    center=(SMOOTHING_RADIUS, SMOOTHING_RADIUS),
+    radius:float=SMOOTHING_RADIUS
+) -> None:
+    r, g, b, _ = color
+    a = 20
+    for rad in range(radius, 1, -1):
+        col = pg.Color(r, g, b, int(a))
+        pg.draw.circle(surface, col, center, rad)
+        a += 180/radius
+    return
+
 
 if __name__ == "__main__":
     filterwarnings("ignore")
