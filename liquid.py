@@ -29,7 +29,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
 
         elif mode == "grid":
             pos = (inicial_x + (i%per_row) * spacing, inicial_y + (i//per_row +1) * spacing)
-            pos = np.array(pos)
+            pos = np.array(pos).reshape((1, 2))
 
         positions[i] = pos
 
@@ -75,12 +75,16 @@ def calculate_pressure_force(
     dst = np.sqrt(np.sum(dir**2, axis=-1))
 
     slope = smoothing_kernel_derivative(dst)
-    shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
+    # shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
 
     div = dst * densities
-    div = np.where(div > 0, div, div+1)
     # NOTE: np.where for zero divison error
-    multiplier = shared_pressure * slope * MASS / div
+    div = np.where(div > 0, div, div+1)
+    
+    # NOTE: testing gradient
+    a = exemple_func(ref_pos[0], ref_pos[1])
+    multiplier = a * slope * MASS / div
+    # multiplier = shared_pressure * slope * MASS / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
@@ -96,3 +100,8 @@ def calculate_pressure_force(
     # print("Res", influences[ind])
 
     return np.sum(influences, axis=0)
+
+@njit(cache = not DEBUG)
+def exemple_func(x:float, y:float) -> float:
+    "Function to test the gradient"
+    return np.cos((y/20) -3 + np.sin(x/20))
