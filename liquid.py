@@ -34,7 +34,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
         positions[i] = pos
 
     return positions
-    
+
 
 @njit(cache = not DEBUG)
 def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
@@ -48,7 +48,7 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
 
 @njit(cache = not DEBUG)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
-    """Min. value: ???
+    """Min. value: (-12) * R (* FACTOR_SLOPE) / pi * R^4
     Max. value: 0
     """
     value = SMOOTHING_RADIUS - dst
@@ -59,14 +59,22 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
 
 @njit(cache = not DEBUG)
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
+    """Min. value: 0
+    Max. value: MAX_DENSITY (approx. XX times the density of one particule)
+    ---
+    'XX' is a function of SMOOTHING_RADIUS; how many particules can be inside of it?
+    """
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
 
     influence = np.sum(smoothing_kernel(dst))
     return influence * MASS * FACTOR_DENSITY
-    
-    
+
+
 @njit(cache = not DEBUG)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
+    """Min. value: -TARGET_DENSITY * FACTOR_PRESSURE
+    Max. value: approx. (MAX_DENSITY -1) * FACTOR_PRESSURE
+    """
     return (density - TARGET_DENSITY) * FACTOR_PRESSURE
 
 
@@ -80,16 +88,18 @@ def calculate_pressure_force(
     dir = (positions - ref_pos)
     dst = np.sqrt(np.sum(dir**2, axis=-1))
 
-    slope = smoothing_kernel_derivative(dst)
-    # shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
-
     div = dst * densities
     # NOTE: np.where for zero divison error
     div = np.where(div > 0, div, div+1)
     
-    # NOTE: testing gradient
-    a = exemple_func(ref_pos)
-    multiplier = a * slope * MASS / div
+    slope = smoothing_kernel_derivative(dst)
+
+    # testing gradient
+    aux = exemple_func(ref_pos)
+    multiplier = aux * slope * MASS / div
+
+    # # gradient with pressure
+    # shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
     # multiplier = shared_pressure * slope * MASS / div
 
     influences = dir.copy()
