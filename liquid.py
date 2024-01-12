@@ -38,6 +38,9 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
 
 @njit(cache = not DEBUG)
 def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
+    """Min. value: 0
+    Max. value: 6 * R^2 / pi * R^4
+    """
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
 
@@ -45,6 +48,9 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
 
 @njit(cache = not DEBUG)
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
+    """Min. value: ???
+    Max. value: 0
+    """
     value = SMOOTHING_RADIUS - dst
     value = np.clip(value, a_min=0, a_max=None)
 
@@ -82,7 +88,7 @@ def calculate_pressure_force(
     div = np.where(div > 0, div, div+1)
     
     # NOTE: testing gradient
-    a = exemple_func(ref_pos[0], ref_pos[1])
+    a = exemple_func(ref_pos)
     multiplier = a * slope * MASS / div
     # multiplier = shared_pressure * slope * MASS / div
 
@@ -102,6 +108,26 @@ def calculate_pressure_force(
     return np.sum(influences, axis=0)
 
 @njit(cache = not DEBUG)
-def exemple_func(x:float, y:float) -> float:
-    "Function to test the gradient"
-    return np.cos((y/20) -3 + np.sin(x/20))
+def exemple_func(pos: np.ndarray) -> np.ndarray:
+    """Function to test the gradient
+    Min. value: -1
+    Max. value: +1
+    """
+    assert len(pos.shape) == 2
+
+    return np.cos((pos[:, 1] / PIX_TO_UN) -3 + np.sin(pos[:, 0] / PIX_TO_UN))
+
+@njit(cache = not DEBUG)
+def calculate_exemple(positions: np.ndarray, ref: np.ndarray) -> np.ndarray:
+    """Function to test the gradient
+    Min. value: -1
+    Max. value: +1
+    """
+    dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
+
+    property = exemple_func(positions)
+    influence = np.sum(smoothing_kernel(dst) * property)
+
+    # to range (-1, +1):
+    influence *= np.pi * (SMOOTHING_RADIUS**2) / 6
+    return influence * MASS
