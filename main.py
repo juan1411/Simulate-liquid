@@ -17,9 +17,6 @@ class Engine:
 
     def __init__(self, num_particules: int = NUM_PARTICULES):
         pg.init()
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
 
         self.screen = pg.display.set_mode(WIN_RES, flags = pg.DOUBLEBUF)
         self.is_executing = True
@@ -50,30 +47,39 @@ class Engine:
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
         self.screen.fill(COLOR_BG)
         
-        # for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
-        #     for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
-        #         pos = np.array((x+3, y+3)) #.reshape((1, 2))
-        #         # d = calculate_density(self.positions, pos)
-        #         exemp = exemple_func(pos[0], pos[1])
-        #         p = calculate_pressure_force(self.positions, self.densities, pos, 0)
-        #         s = p.sum()
-        #         end = ( x +(self.delta_time *p[0]/s), y +(self.delta_time *p[1]/s) )
+        # NOTE: background color
+        for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
+            for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
+                pos = np.array((x+3, y+3))
+                # d = calculate_density(self.positions, pos)
+                exemp = calculate_exemple(self.positions, pos)
 
-        #         # col = get_density_color(d)
-        #         col = get_exemple_color(exemp)
-        #         pg.draw.rect(self.screen, col, (x, y, 5, 5))
-        #         # pg.draw.circle(self.screen, (0,0,0), (x+3, y+3), 2)
-        #         # pg.draw.line(self.screen, (0,0,0), (x+3, y+3), end)
+                # col = get_density_color(d)
+                col = get_exemple_color(exemp/12)
+                pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
-        # NOTE: smoothing radius
-        for i in range(self.n_parts):
-            pos = self.positions[i]
+        # NOTE: visualizing gradient direction
+        inc = PIX_TO_UN//2 +1
+        for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-PIX_TO_UN+1), PIX_TO_UN):
+            for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
+                pos = np.array((x +inc, y +inc)).reshape((1, 2))
 
-            alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
-            alpha_surf.fill((0, 0, 0, 0))
-            col = get_exemple_color(exemple_func(pos[0], pos[1]))
-            draw_smooth_circle(alpha_surf, col)
-            self.screen.blit(alpha_surf, pos-SMOOTHING_RADIUS)
+                # d = calculate_density(self.positions, pos)
+                p = calculate_pressure_force(self.positions, self.densities, pos, 0)
+                s = p.sum()
+                end = ( x +(p[0]/s), y +(p[1]/s) )
+                pg.draw.circle(self.screen, (0,0,0), (x +inc, y +inc), 4, 2)
+                pg.draw.line(self.screen, (0,0,0), (x +inc, y +inc), end, 2)
+
+        # # NOTE: tentativa de aproximar o valor da funcao
+        # for i in range(self.n_parts):
+        #     pos = self.positions[i]
+
+        #     alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+        #     alpha_surf.fill((0, 0, 0, 0))
+        #     col = get_exemple_color(exemple_func(pos[0], pos[1]))
+        #     draw_smooth_circle(alpha_surf, col)
+        #     self.screen.blit(alpha_surf, pos-SMOOTHING_RADIUS)
 
         # NOTE: particules
         for i in range(self.n_parts):
@@ -112,7 +118,7 @@ class Engine:
     def update_pressures(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
-            pos = self.positions[i].ravel()
+            pos = self.positions[i].reshape((1, 2))
             dens = self.densities[i]
             pressure = calculate_pressure_force(self.positions, self.densities, pos, dens)
             self.pressures[i] += pressure
@@ -180,13 +186,14 @@ def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.nda
 
 def get_density_color(density: float) -> pg.Color:
     value = density - TARGET_DENSITY
-    ref = TARGET_DENSITY*0.25
+    ref = 0.01
 
     if abs(value) < ref: # -ref < value < +ref
         col = pg.Color(250, 250, 250)
     
     elif value >= ref: # ref <= value <= MAX_DENSITY
-        aux = (value - ref) / (MAX_DENSITY - ref)
+        aux = np.log(value -ref +1)
+        aux = aux / np.log(MAX_DENSITY -ref +1)
         col = pg.Color(250, 250, 250).lerp(COLOR_MORE_ATRIB, aux)
 
     else: # 0 <= density <= TARGET_DENSITY - ref
