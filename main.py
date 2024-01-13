@@ -12,6 +12,7 @@ import sys
 from constants import *
 from liquid import *
 
+filterwarnings("ignore")
 
 class Engine:
 
@@ -51,11 +52,11 @@ class Engine:
         for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                 pos = np.array((x+3, y+3))
-                # d = calculate_density(self.positions, pos)
+                d = calculate_density(self.positions, pos)
                 exemp = calculate_exemple(self.positions, pos)
 
                 # col = get_density_color(d)
-                col = get_exemple_color(exemp/12)
+                col = get_exemple_color(exemp*2/d)
                 pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
         # NOTE: visualizing gradient direction
@@ -73,13 +74,14 @@ class Engine:
 
         # # NOTE: tentativa de aproximar o valor da funcao
         # for i in range(self.n_parts):
-        #     pos = self.positions[i]
+        #     pos = self.positions[i:i+1, :]
 
         #     alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
         #     alpha_surf.fill((0, 0, 0, 0))
-        #     col = get_exemple_color(exemple_func(pos[0], pos[1]))
+        #     col = get_exemple_color(exemple_func(pos))
         #     draw_smooth_circle(alpha_surf, col)
-        #     self.screen.blit(alpha_surf, pos-SMOOTHING_RADIUS)
+        #     blit_pos = pos - SMOOTHING_RADIUS
+        #     self.screen.blit(alpha_surf, blit_pos.ravel())
 
         # NOTE: particules
         for i in range(self.n_parts):
@@ -92,6 +94,7 @@ class Engine:
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
         pg.display.flip()
 
+    # @jit(cache=not DEBUG)
     def update(self):
         self.delta_time = self.clock.tick() * 0.001
 
@@ -110,7 +113,7 @@ class Engine:
     def update_densities(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
-            pos = self.positions[i].ravel()
+            pos = self.positions[i:i+1, :]
             density = calculate_density(self.positions, pos)
             self.densities[i] = density
 
@@ -118,7 +121,7 @@ class Engine:
     def update_pressures(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
-            pos = self.positions[i].reshape((1, 2))
+            pos = self.positions[i:i+1, :]
             dens = self.densities[i]
             pressure = calculate_pressure_force(self.positions, self.densities, pos, dens)
             self.pressures[i] += pressure
@@ -164,6 +167,7 @@ class Engine:
         sys.exit()
 
 
+@njit(cache = not DEBUG)
 def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     ref = pos - CENTER_TANK_NUMPY
@@ -184,6 +188,7 @@ def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.nda
 
     return pos, vel
 
+@jit(cache = not DEBUG)
 def get_density_color(density: float) -> pg.Color:
     value = density - TARGET_DENSITY
     ref = 0.01
@@ -203,6 +208,7 @@ def get_density_color(density: float) -> pg.Color:
 
     return col
 
+@jit(cache = not DEBUG)
 def get_pressure_color(pressure: float) -> pg.Color:
     ref = 0.05
 
@@ -221,26 +227,26 @@ def get_pressure_color(pressure: float) -> pg.Color:
 
     return col
 
+@jit(cache = not DEBUG)
 def get_exemple_color(value: float) -> pg.Color:    
     # -1 <= value <= 1
     return COLOR_LESS_ATRIB.lerp(COLOR_MORE_ATRIB, (1+value)/2)
 
+@njit(cache = not DEBUG)
 def draw_smooth_circle(
     surface, color: pg.Color,
     center=(SMOOTHING_RADIUS, SMOOTHING_RADIUS),
     radius:float=SMOOTHING_RADIUS
 ) -> None:
     r, g, b, _ = color
-    a = 20
-    for rad in range(radius, 1, -1):
+    a = 0
+    for rad in range(radius, 1, -2):
         col = pg.Color(r, g, b, int(a))
         pg.draw.circle(surface, col, center, rad)
-        a += 180/radius
+        a += 2*(250/radius)
     return
 
 
 if __name__ == "__main__":
-    filterwarnings("ignore")
-
     app = Engine()
     app.run()
