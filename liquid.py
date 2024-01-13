@@ -128,7 +128,7 @@ def exemple_func(pos: np.ndarray) -> np.ndarray:
     return np.cos((pos[:, 1] / PIX_TO_UN) -3 + np.sin(pos[:, 0] / PIX_TO_UN))
 
 @njit(cache = not DEBUG)
-def calculate_exemple(positions: np.ndarray, ref: np.ndarray) -> np.ndarray:
+def calculate_exemple(positions: np.ndarray, densities:np.ndarray, ref: np.ndarray) -> np.ndarray:
     """Function to test the gradient
     Min. value: -1
     Max. value: +1
@@ -136,7 +136,7 @@ def calculate_exemple(positions: np.ndarray, ref: np.ndarray) -> np.ndarray:
     dst = np.sqrt(np.sum((positions - ref)**2, axis=-1))
 
     property = exemple_func(positions)
-    influence = np.sum(smoothing_kernel(dst) * property)
+    influence = np.sum(smoothing_kernel(dst) * property / densities)
 
     # to range (-1, +1):
     influence *= np.pi * (SMOOTHING_RADIUS**2) / 6

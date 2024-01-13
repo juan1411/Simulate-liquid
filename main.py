@@ -52,11 +52,11 @@ class Engine:
         for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                 pos = np.array((x+3, y+3))
-                d = calculate_density(self.positions, pos)
-                exemp = calculate_exemple(self.positions, pos)
+                # d = calculate_density(self.positions, pos)
+                exemp = calculate_exemple(self.positions, self.densities, pos)
 
                 # col = get_density_color(d)
-                col = get_exemple_color(exemp*2/d)
+                col = get_exemple_color(exemp*1.5)
                 pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
         # NOTE: visualizing gradient direction
