@@ -52,11 +52,11 @@ class Engine:
         for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                 pos = np.array((x+3, y+3))
-                # d = calculate_density(self.positions, pos)
-                exemp = calculate_exemple(self.positions, self.densities, pos)
+                d = calculate_density(self.positions, pos)
+                # exemp = calculate_exemple(self.positions, self.densities, pos)
 
-                # col = get_density_color(d)
-                col = get_exemple_color(exemp*1.5)
+                col = get_density_color(d)
+                # col = get_exemple_color(exemp*1.5)
                 pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
         # NOTE: visualizing gradient direction
@@ -65,12 +65,13 @@ class Engine:
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
                 pos = np.array((x +inc, y +inc)).reshape((1, 2))
 
-                # d = calculate_density(self.positions, pos)
-                p = calculate_pressure_force(self.positions, self.densities, pos, 0)
-                s = p.sum()
-                end = ( x +(p[0]/s), y +(p[1]/s) )
-                pg.draw.circle(self.screen, (0,0,0), (x +inc, y +inc), 4, 2)
-                pg.draw.line(self.screen, (0,0,0), (x +inc, y +inc), end, 2)
+                d = calculate_density(self.positions, pos)
+                p = calculate_pressure_force(self.positions, self.densities, pos, d)
+                # grad = calculate_exemple_gradient(self.positions, self.densities, pos)
+                end = pos.ravel() + p
+                # end = pos.ravel() + grad
+                pg.draw.circle(self.screen, (0,0,0), (x +inc, y +inc), 4)
+                pg.draw.line(self.screen, (0,0,0), (x +inc, y +inc), end, 3)
 
         # # NOTE: tentativa de aproximar o valor da funcao
         # for i in range(self.n_parts):
@@ -167,7 +168,7 @@ class Engine:
         sys.exit()
 
 
-@njit(cache = not DEBUG)
+# @njit(cache = not DEBUG)
 def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     ref = pos - CENTER_TANK_NUMPY

@@ -94,13 +94,9 @@ def calculate_pressure_force(
     
     slope = smoothing_kernel_derivative(dst)
 
-    # testing gradient
-    aux = exemple_func(ref_pos)
-    multiplier = aux * slope * MASS / div
-
-    # # gradient with pressure
-    # shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
-    # multiplier = shared_pressure * slope * MASS / div
+    # gradient with pressure
+    shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
+    multiplier = shared_pressure * slope / div
 
     influences = dir.copy()
     influences[:, 0] = dir[:, 0] * multiplier
@@ -115,7 +111,7 @@ def calculate_pressure_force(
     # print("Pres:", shared_pressure[ind])
     # print("Res", influences[ind])
 
-    return np.sum(influences, axis=0)
+    return np.sum(influences, axis=0) * MASS * 2_000
 
 @njit(cache = not DEBUG)
 def exemple_func(pos: np.ndarray) -> np.ndarray:
@@ -141,3 +137,30 @@ def calculate_exemple(positions: np.ndarray, densities:np.ndarray, ref: np.ndarr
     # to range (-1, +1):
     influence *= np.pi * (SMOOTHING_RADIUS**2) / 6
     return influence * MASS
+
+
+@njit(cache = not DEBUG)
+def calculate_exemple_gradient(
+    positions: np.ndarray, densities: np.ndarray,
+    ref_pos: np.ndarray
+) -> np.ndarray:
+    assert positions.shape[0] == densities.shape[0]
+
+    dir = (positions - ref_pos)
+    dst = np.sqrt(np.sum(dir**2, axis=-1))
+
+    div = dst * densities
+    # NOTE: np.where for zero divison error
+    div = np.where(div > 0, div, div+1)
+    
+    slope = smoothing_kernel_derivative(dst)
+
+    # testing gradient
+    property = exemple_func(ref_pos)
+    multiplier = property * slope / div
+
+    influences = dir.copy()
+    influences[:, 0] = dir[:, 0] * multiplier
+    influences[:, 1] = dir[:, 1] * multiplier
+
+    return np.sum(influences, axis=0) * MASS * 50_000
