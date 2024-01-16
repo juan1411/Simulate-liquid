@@ -36,7 +36,7 @@ def create_particules(num_particules:int = NUM_PARTICULES, mode:str = "random") 
     return positions
 
 
-@njit(cache = not DEBUG)
+@njit
 def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
     """Min. value: 0
     Max. value: 6 * R^2 / pi * R^4
@@ -46,7 +46,7 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
 
     return (value ** 2) / VOLUME
 
-@njit(cache = not DEBUG)
+@njit
 def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     """Min. value: (-12) * R (* FACTOR_SLOPE) / pi * R^4
     Max. value: 0
@@ -57,7 +57,7 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     return value * FACTOR_SLOPE / VOLUME
 
 
-@njit(cache = not DEBUG)
+@njit
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     """Min. value: 0
     Max. value: MAX_DENSITY (approx. XX times the density of one particule)
@@ -70,18 +70,19 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
     return influence * MASS * FACTOR_DENSITY
 
 
-@njit(cache = not DEBUG)
-def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
+@njit
+def density_to_pressure(density: float | np.ndarray, factor: float = FACTOR_PRESSURE) -> float | np.ndarray:
     """Min. value: -TARGET_DENSITY * FACTOR_PRESSURE
     Max. value: approx. (MAX_DENSITY -TARGET_DENSITY) * FACTOR_PRESSURE
     """
-    return np.abs(density - TARGET_DENSITY) * FACTOR_PRESSURE
+    return np.abs(density - TARGET_DENSITY) * factor
 
 
-@njit(cache = not DEBUG)
+@njit
 def calculate_pressure_force(
     positions: np.ndarray, densities: np.ndarray,
-    ref_pos: np.ndarray, ref_dens: float
+    ref_pos: np.ndarray, ref_dens: float,
+    factor: float = FACTOR_PRESSURE
 ) -> np.ndarray:
     assert positions.shape[0] == densities.shape[0]
 
@@ -95,7 +96,7 @@ def calculate_pressure_force(
     slope = smoothing_kernel_derivative(dst)
 
     # gradient with pressure
-    shared_pressure = (density_to_pressure(densities) + density_to_pressure(ref_dens)) / 2
+    shared_pressure = (density_to_pressure(densities, factor) + density_to_pressure(ref_dens, factor)) / 2
     multiplier = shared_pressure * slope / div
 
     influences = dir.copy()
@@ -113,7 +114,7 @@ def calculate_pressure_force(
 
     return np.sum(influences, axis=0) * MASS * 500
 
-@njit(cache = not DEBUG)
+@njit
 def exemple_func(pos: np.ndarray) -> np.ndarray:
     """Function to test the gradient
     Min. value: -1
@@ -123,7 +124,7 @@ def exemple_func(pos: np.ndarray) -> np.ndarray:
 
     return np.cos((pos[:, 1] / PIX_TO_UN) -3 + np.sin(pos[:, 0] / PIX_TO_UN))
 
-@njit(cache = not DEBUG)
+@njit
 def calculate_exemple(positions: np.ndarray, densities:np.ndarray, ref: np.ndarray) -> np.ndarray:
     """Function to test the gradient
     Min. value: -1
@@ -139,7 +140,7 @@ def calculate_exemple(positions: np.ndarray, densities:np.ndarray, ref: np.ndarr
     return influence * MASS
 
 
-@njit(cache = not DEBUG)
+@njit
 def calculate_exemple_gradient(
     positions: np.ndarray, densities: np.ndarray,
     ref_pos: np.ndarray

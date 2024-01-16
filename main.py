@@ -24,6 +24,7 @@ class Engine:
 
         self.is_executing = True
         self.is_running = False
+        self.show_bg_color = False
 
         self.clock = pg.time.Clock()
         self.delta_time = 0.1
@@ -52,15 +53,16 @@ class Engine:
         self.screen.fill(COLOR_BG)
         
         # NOTE: background color
-        for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
-            for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
-                pos = np.array((x+3, y+3))
-                d = calculate_density(self.positions, pos)
-                # exemp = calculate_exemple(self.positions, self.densities, pos)
+        if self.show_bg_color:
+            for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
+                for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
+                    pos = np.array((x+3, y+3))
+                    d = calculate_density(self.positions, pos)
+                    # exemp = calculate_exemple(self.positions, self.densities, pos)
 
-                col = get_density_color(d)
-                # col = get_exemple_color(exemp*1.5)
-                pg.draw.rect(self.screen, col, (x, y, 5, 5))
+                    col = get_density_color(d)
+                    # col = get_exemple_color(exemp*1.5)
+                    pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
         # # NOTE: visualizing gradient direction
         # inc = PIX_TO_UN//2 +1
@@ -129,9 +131,16 @@ class Engine:
         self.screen.blit(td, (420, 40))
         self.screen.blit(md, (420, 60))
 
+        # bloco 4
+        status = self.font.render(f"Stop: {self.is_running}", True, "white")
+        color = self.font.render(f"Bg Color: {self.show_bg_color}", True, "white")
+
+        self.screen.blit(status, (620, 20))
+        self.screen.blit(color, (620, 40))
+
     # @jit(cache=not DEBUG)
     def update(self):
-        # self.delta_time = self.clock.tick() * 0.001
+        self.delta_time = self.clock.tick() * 0.001
 
         if self.is_running:
             self.time += self.delta_time
@@ -145,7 +154,7 @@ class Engine:
             self.positions += self.velocities * self.delta_time
             self.positions, self.velocities = tank_collision(self.positions, self.velocities)
 
-    @jit(parallel=True, cache=not DEBUG)
+    @jit(parallel=True)
     def update_densities(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
@@ -153,22 +162,22 @@ class Engine:
             density = calculate_density(self.pred_pos, pos)
             self.densities[i] = density
 
-    @jit(parallel=True, cache=not DEBUG)
+    @jit(parallel=True)
     def update_pressures(self):
         # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
             pos = self.pred_pos[i:i+1, :]
             dens = self.densities[i]
-            pressure = calculate_pressure_force(self.pred_pos, self.densities, pos, dens)
-            self.pressures[i] += pressure
+            pressure = calculate_pressure_force(self.pred_pos, self.densities, pos, dens, FACTOR_PRESSURE)
+            self.pressures[i] = pressure
 
-    @jit(parallel=True, cache=not DEBUG)
+    @jit(parallel=True)
     def update_velocities(self):
         self.velocities[:, 1] += GRAVITY * self.delta_time
         self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities
         self.velocities[:, 1] += self.pressures[:, 1] * self.delta_time / self.densities
 
-    @jit(parallel=True, cache=not DEBUG)
+    @jit(parallel=True)
     def update_predictions(self):
         self.pred_pos = self.positions + (self.velocities * self.delta_time)
 
@@ -196,6 +205,9 @@ class Engine:
                     self.time = 0
                     self.inicial_setup()
 
+                if event.key == pg.K_c:
+                    self.show_bg_color = not self.show_bg_color
+
             else:
                 if hasattr(event, "key"):
                     print(f'Type: {pg.event.event_name(event.type)} - key: {pg.key.name(event.key)}')
@@ -210,7 +222,7 @@ class Engine:
         sys.exit()
 
 
-# @njit(cache = not DEBUG)
+# @njit
 def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     ref = pos - CENTER_TANK_NUMPY
@@ -231,7 +243,7 @@ def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.nda
 
     return pos, vel
 
-@jit(cache = not DEBUG)
+@jit
 def get_density_color(density: float) -> pg.Color:
     value = density - TARGET_DENSITY
     ref = 0.01
@@ -251,7 +263,7 @@ def get_density_color(density: float) -> pg.Color:
 
     return col
 
-@jit(cache = not DEBUG)
+@jit
 def get_pressure_color(pressure: float) -> pg.Color:
     ref = 0.05
 
@@ -270,12 +282,12 @@ def get_pressure_color(pressure: float) -> pg.Color:
 
     return col
 
-@jit(cache = not DEBUG)
+@jit
 def get_exemple_color(value: float) -> pg.Color:    
     # -1 <= value <= 1
     return COLOR_LESS_ATRIB.lerp(COLOR_MORE_ATRIB, (1+value)/2)
 
-@njit(cache = not DEBUG)
+@njit
 def draw_smooth_circle(
     surface, color: pg.Color,
     center=(SMOOTHING_RADIUS, SMOOTHING_RADIUS),
