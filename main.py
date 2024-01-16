@@ -42,7 +42,7 @@ class Engine:
 
         self.update_densities()
         self.update_pressures()
-        self.update_velocities()
+        # self.update_velocities()
 
     def render(self):
         pg.display.set_caption(f'FPS: {self.clock.get_fps():.0f} | Time: {self.time:.4f}')
@@ -52,26 +52,27 @@ class Engine:
         for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                 pos = np.array((x+3, y+3))
-                d = calculate_density(self.positions, pos)
-                # exemp = calculate_exemple(self.positions, self.densities, pos)
+                # d = calculate_density(self.positions, pos)
+                exemp = calculate_exemple(self.positions, self.densities, pos)
 
-                col = get_density_color(d)
-                # col = get_exemple_color(exemp*1.5)
+                # col = get_density_color(d)
+                col = get_exemple_color(exemp*1.5)
                 pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
         # NOTE: visualizing gradient direction
         inc = PIX_TO_UN//2 +1
-        for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-PIX_TO_UN+1), PIX_TO_UN):
+        for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), PIX_TO_UN):
             for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
                 pos = np.array((x +inc, y +inc)).reshape((1, 2))
 
                 d = calculate_density(self.positions, pos)
-                p = calculate_pressure_force(self.positions, self.densities, pos, d)
-                # grad = calculate_exemple_gradient(self.positions, self.densities, pos)
-                end = pos.ravel() + p
-                # end = pos.ravel() + grad
-                pg.draw.circle(self.screen, (0,0,0), (x +inc, y +inc), 4)
-                pg.draw.line(self.screen, (0,0,0), (x +inc, y +inc), end, 3)
+                # p = calculate_pressure_force(self.positions, self.densities, pos, d)
+                grad = calculate_exemple_gradient(self.positions, self.densities, pos)
+
+                # end = pos.ravel() + p
+                end = pos.ravel() + grad
+                pg.draw.circle(self.screen, (210,210,15), (x +inc, y +inc), 4)
+                pg.draw.line(self.screen, (210,210,15), (x +inc, y +inc), end, 3)
 
         # # NOTE: tentativa de aproximar o valor da funcao
         # for i in range(self.n_parts):
@@ -89,7 +90,7 @@ class Engine:
             pos = self.positions[i]
             # pre = self.pressures[i] * 0.5
             # pg.draw.line(self.screen, COLOR_ARROWS, pos, pos+pre)
-            pg.draw.circle(self.screen, (0,0,0), pos, RADIUS, 2)
+            pg.draw.circle(self.screen, (250,250,250), pos, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
@@ -101,14 +102,14 @@ class Engine:
 
         if self.is_running:
             self.time += self.delta_time
-
-            self.positions += self.velocities * self.delta_time
-            self.positions, self.velocities = tank_collision(self.positions, self.velocities)
             
             # TODO: too slow, find another way?
             self.update_densities()
             self.update_pressures()
             self.update_velocities()
+
+            self.positions += self.velocities * self.delta_time
+            self.positions, self.velocities = tank_collision(self.positions, self.velocities)
 
     @jit(parallel=True, cache=not DEBUG)
     def update_densities(self):
@@ -125,7 +126,7 @@ class Engine:
             pos = self.positions[i:i+1, :]
             dens = self.densities[i]
             pressure = calculate_pressure_force(self.positions, self.densities, pos, dens)
-            self.pressures[i] += pressure
+            self.pressures[i] = pressure
 
     @jit(parallel=True, cache=not DEBUG)
     def update_velocities(self):
@@ -195,17 +196,17 @@ def get_density_color(density: float) -> pg.Color:
     ref = 0.01
 
     if abs(value) < ref: # -ref < value < +ref
-        col = pg.Color(250, 250, 250)
+        col = pg.Color(0, 0, 0)
     
     elif value >= ref: # ref <= value <= MAX_DENSITY
         aux = np.log(value -ref +1)
         aux = aux / np.log(MAX_DENSITY -ref +1)
-        col = pg.Color(250, 250, 250).lerp(COLOR_MORE_ATRIB, aux)
+        col = pg.Color(0, 0, 0).lerp(COLOR_MORE_ATRIB, aux)
 
     else: # 0 <= density <= TARGET_DENSITY - ref
         aux = np.log(density +1)
         aux = aux / np.log(TARGET_DENSITY -ref +1)
-        col = COLOR_LESS_ATRIB.lerp(pg.Color(250, 250, 250), aux)
+        col = COLOR_LESS_ATRIB.lerp(pg.Color(0, 0, 0), aux)
 
     return col
 
