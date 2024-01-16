@@ -51,10 +51,10 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     """Min. value: (-12) * R (* FACTOR_SLOPE) / pi * R^4
     Max. value: 0
     """
-    value = SMOOTHING_RADIUS - dst
-    value = np.clip(value, a_min=0, a_max=None)
+    value = dst - SMOOTHING_RADIUS
+    value = np.clip(value, a_min=(-2)*SMOOTHING_RADIUS, a_max=0)
 
-    return (-2) * value * FACTOR_SLOPE / VOLUME
+    return value * FACTOR_SLOPE / VOLUME
 
 
 @njit(cache = not DEBUG)
@@ -73,9 +73,9 @@ def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
 @njit(cache = not DEBUG)
 def density_to_pressure(density: float | np.ndarray) -> float | np.ndarray:
     """Min. value: -TARGET_DENSITY * FACTOR_PRESSURE
-    Max. value: approx. (MAX_DENSITY -1) * FACTOR_PRESSURE
+    Max. value: approx. (MAX_DENSITY -TARGET_DENSITY) * FACTOR_PRESSURE
     """
-    return (density - TARGET_DENSITY) * FACTOR_PRESSURE
+    return np.abs(density - TARGET_DENSITY) * FACTOR_PRESSURE
 
 
 @njit(cache = not DEBUG)
@@ -163,4 +163,4 @@ def calculate_exemple_gradient(
     influences[:, 0] = dir[:, 0] * multiplier
     influences[:, 1] = dir[:, 1] * multiplier
 
-    return np.sum(influences, axis=0) * MASS * 50_000
+    return np.sum(influences, axis=0) * MASS * 20_000
