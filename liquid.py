@@ -111,7 +111,7 @@ def calculate_pressure_force(
     # print("Pres:", shared_pressure[ind])
     # print("Res", influences[ind])
 
-    return np.sum(influences, axis=0) * MASS * 2_000
+    return np.sum(influences, axis=0) * MASS * 500
 
 @njit(cache = not DEBUG)
 def exemple_func(pos: np.ndarray) -> np.ndarray:
