@@ -152,8 +152,11 @@ class Engine:
                 if event.key == pg.K_UP: GRAVITY += 1
                 elif event.key == pg.K_DOWN: GRAVITY -= 1
 
-                if event.key in (pg.K_SPACE, pg.K_KP_ENTER):
+                if event.key == pg.K_SPACE:
                     self.is_running = not self.is_running
+
+                if event.key == pg.K_RETURN:
+                    self.inicial_setup()
 
             else:
                 if hasattr(event, "key"):
