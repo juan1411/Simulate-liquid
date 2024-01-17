@@ -165,3 +165,19 @@ def calculate_exemple_gradient(
     influences[:, 1] = dir[:, 1] * multiplier
 
     return np.sum(influences, axis=0) * MASS * 20_000
+
+
+def calculate_mouse_force(
+    mouse_pos:np.ndarray, positions:np.ndarray,
+    vels:np.ndarray, rad:float, strength:float
+) -> np.ndarray:
+    force = np.zeros(positions.shape)
+    offset = mouse_pos - positions
+    dst = np.sqrt(np.sum(offset**2, axis=-1))
+    dst = np.repeat(dst.reshape((dst.shape[0], 1)), 2, axis=1)
+    center_t = 1 - dst/rad
+    
+    dir_to_input = np.where(dst > 0.1, offset/dst, force)
+    force += np.where(dst < rad, (dir_to_input *strength -vels)*center_t, force)
+
+    return force

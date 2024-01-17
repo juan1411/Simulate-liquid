@@ -27,6 +27,9 @@ class Engine:
         self.show_bg_color = False
         self.show_gradient = False
 
+        self.mouse_value = 0
+        self.mouse_radius = 50
+
         self.clock = pg.time.Clock()
         self.delta_time = 0.1
         self.time = 0
@@ -37,6 +40,7 @@ class Engine:
         self.velocities: np.ndarray = None
         self.densities: np.ndarray = None
         self.pressures: np.ndarray = None
+        self.mouse_force: np.ndarray = None
         self.inicial_setup()
 
     def inicial_setup(self):
@@ -45,6 +49,7 @@ class Engine:
         self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.densities = np.zeros((self.n_parts,), dtype=np.float32)
         self.pressures = np.zeros((self.n_parts, 2), dtype=np.float32)
+        self.mouse_force = np.zeros((self.n_parts, 2), dtype=np.float32)
 
         self.update_predictions()
         self.update_densities()
@@ -99,7 +104,7 @@ class Engine:
             pos = self.positions[i]
             pg.draw.circle(self.screen, (250,250,250), pos, RADIUS, 2)
         
-        pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
+        pg.draw.circle(self.screen, "red", pg.mouse.get_pos(), self.mouse_radius, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
 
         self.draw_text()
@@ -162,6 +167,7 @@ class Engine:
             self.update_predictions()
             self.update_densities()
             self.update_pressures()
+            if self.mouse_value != 0: self.update_mouse_force()
             self.update_velocities()
 
             self.positions += self.velocities * self.delta_time
@@ -186,13 +192,23 @@ class Engine:
 
     @jit(parallel=True)
     def update_velocities(self):
+        density = np.repeat(self.densities.reshape((self.n_parts, 1)), 2, axis=1)
         self.velocities[:, 1] += GRAVITY * self.delta_time
-        self.velocities[:, 0] += self.pressures[:, 0] * self.delta_time / self.densities
-        self.velocities[:, 1] += self.pressures[:, 1] * self.delta_time / self.densities
+        self.velocities += self.pressures * self.delta_time / density
+        self.velocities += self.mouse_force * self.delta_time / density
 
     @jit(parallel=True)
     def update_predictions(self):
         self.pred_pos = self.positions + (self.velocities * self.delta_time)
+
+    @jit(parallel=True)
+    def update_mouse_force(self):
+        # TODO: iterate over all particules is slow, filter!
+        mouse_pos = pg.mouse.get_pos()
+        self.mouse_force = calculate_mouse_force(
+            mouse_pos, self.pred_pos, self.velocities,
+            self.mouse_radius, self.mouse_value
+        )
 
     def handle_events(self):
         global GRAVITY, FACTOR_PRESSURE
@@ -202,7 +218,19 @@ class Engine:
                 self.is_executing = False
 
             elif event.type == pg.MOUSEBUTTONDOWN:
-                print("Mouse button down")
+                pg.mouse.set_visible(False)
+                if event.button == 1: self.mouse_value = FACTOR_MOUSE
+                elif event.button == 3: self.mouse_value = -FACTOR_MOUSE
+
+            elif event.type == pg.MOUSEBUTTONUP:
+                self.mouse_force = np.zeros((self.n_parts, 2), dtype=np.float32)
+                pg.mouse.set_visible(True)
+                self.mouse_value = 0
+
+            elif event.type == pg.MOUSEWHEEL:
+                if event.y > 0: self.mouse_radius += 2
+                else:
+                    self.mouse_radius -= 2
 
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_UP: GRAVITY += 1
