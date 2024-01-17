@@ -25,6 +25,7 @@ class Engine:
         self.is_executing = True
         self.is_running = False
         self.show_bg_color = False
+        self.show_gradient = False
 
         self.clock = pg.time.Clock()
         self.delta_time = 0.1
@@ -66,20 +67,21 @@ class Engine:
                     # col = get_exemple_color(exemp*1.5)
                     pg.draw.rect(self.screen, col, (x, y, 5, 5))
 
-        # # NOTE: visualizing gradient direction
-        # inc = PIX_TO_UN//2 +1
-        # for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), PIX_TO_UN):
-        #     for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
-        #         pos = np.array((x +inc, y +inc)).reshape((1, 2))
+        # NOTE: visualizing gradient direction
+        if self.show_gradient:
+            inc = PIX_TO_UN//2 +1 -5
+            for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), PIX_TO_UN):
+                for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
+                    pos = np.array((x +inc, y +inc)).reshape((1, 2))
 
-        #         d = calculate_density(self.pred_pos, pos)
-        #         p = calculate_pressure_force(self.pred_pos, self.densities, pos, d)
-        #         # grad = calculate_exemple_gradient(self.positions, self.densities, pos)
+                    d = calculate_density(self.pred_pos, pos)
+                    p = calculate_pressure_force(self.pred_pos, self.densities, pos, d)
+                    # grad = calculate_exemple_gradient(self.positions, self.densities, pos)
 
-        #         end = pos.ravel() + p
-        #         # end = pos.ravel() + grad
-        #         pg.draw.circle(self.screen, (210,210,15), (x +inc, y +inc), 4)
-        #         pg.draw.line(self.screen, (210,210,15), (x +inc, y +inc), end, 3)
+                    end = pos.ravel() + (p/7_000)
+                    # end = pos.ravel() + grad
+                    pg.draw.circle(self.screen, (210,210,15), (x +inc, y +inc), 4)
+                    pg.draw.line(self.screen, (210,210,15), (x +inc, y +inc), end, 3)
 
         # # NOTE: tentativa de aproximar o valor da funcao
         # for i in range(self.n_parts):
@@ -95,8 +97,6 @@ class Engine:
         # NOTE: particules
         for i in range(self.n_parts):
             pos = self.positions[i]
-            # pre = self.pressures[i] * 0.5
-            # pg.draw.line(self.screen, COLOR_ARROWS, pos, pos+pre)
             pg.draw.circle(self.screen, (250,250,250), pos, RADIUS, 2)
         
         pg.draw.circle(self.screen, "green", pg.mouse.get_pos(), SMOOTHING_RADIUS, 1)
@@ -145,7 +145,7 @@ class Engine:
         # bloco 5
         status = self.font.render(f"Stop: {not self.is_running}", True, "white")
         color = self.font.render(f"Bg Color: {self.show_bg_color}", True, "white")
-        grad = self.font.render(f"See Gradient: TODO", True, "white")
+        grad = self.font.render(f"Gradient: {self.show_gradient}", True, "white")
 
         self.screen.blit(status, (460, 15))
         self.screen.blit(color, (460, 30))
@@ -220,6 +220,9 @@ class Engine:
 
                 if event.key == pg.K_c:
                     self.show_bg_color = not self.show_bg_color
+
+                if event.key == pg.K_BACKSPACE:
+                    self.show_gradient = not self.show_gradient
 
             else:
                 if hasattr(event, "key"):
