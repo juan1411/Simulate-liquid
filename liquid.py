@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, jit
 
 from constants import *
 
@@ -166,7 +166,7 @@ def calculate_exemple_gradient(
 
     return np.sum(influences, axis=0) * MASS * 20_000
 
-
+@jit
 def calculate_mouse_force(
     mouse_pos:np.ndarray, positions:np.ndarray,
     vels:np.ndarray, rad:float, strength:float

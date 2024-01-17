@@ -204,7 +204,7 @@ class Engine:
     @jit(parallel=True)
     def update_mouse_force(self):
         # TODO: iterate over all particules is slow, filter!
-        mouse_pos = pg.mouse.get_pos()
+        mouse_pos = np.array(pg.mouse.get_pos()).reshape((1, 2))
         self.mouse_force = calculate_mouse_force(
             mouse_pos, self.pred_pos, self.velocities,
             self.mouse_radius, self.mouse_value
