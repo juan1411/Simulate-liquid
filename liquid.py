@@ -41,7 +41,7 @@ def smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
     """Min. value: 0
     Max. value: 6 * R^2 / pi * R^4
     """
-    value = SMOOTHING_RADIUS - dst
+    value = (SMOOTHING_RADIUS - dst) / PIX_TO_UN
     value = np.clip(value, a_min=0, a_max=None)
 
     return (value ** 2) / VOLUME
@@ -51,10 +51,10 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
     """Min. value: (-12) * R (* FACTOR_SLOPE) / pi * R^4
     Max. value: 0
     """
-    value = dst - SMOOTHING_RADIUS
-    value = np.clip(value, a_min=(-2)*SMOOTHING_RADIUS, a_max=0)
+    value = (dst - SMOOTHING_RADIUS) / PIX_TO_UN
+    value = np.clip(value, a_min=SMOOTHING_RADIUS/-PIX_TO_UN, a_max=0)
 
-    return value * FACTOR_SLOPE / VOLUME
+    return 2 * value * FACTOR_SLOPE / VOLUME
 
 
 @njit
@@ -91,7 +91,7 @@ def calculate_pressure_force(
 
     div = dst * densities
     # NOTE: np.where for zero divison error
-    div = np.where(div > 0, div, div+1)
+    div = np.where(div > 0, div, div+0.1)
     
     slope = smoothing_kernel_derivative(dst)
 
@@ -112,7 +112,7 @@ def calculate_pressure_force(
     # print("Pres:", shared_pressure[ind])
     # print("Res", influences[ind])
 
-    return np.sum(influences, axis=0) * MASS * 500
+    return np.sum(influences, axis=0) * MASS * 10
 
 @njit
 def exemple_func(pos: np.ndarray) -> np.ndarray:

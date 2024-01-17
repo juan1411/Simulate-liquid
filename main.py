@@ -18,7 +18,7 @@ class Engine:
 
     def __init__(self, num_particules: int = NUM_PARTICULES):
         pg.init()
-        self.font = pg.font.SysFont(None, 20)
+        self.font = pg.font.SysFont(None, 15)
         self.screen = pg.display.set_mode(WIN_RES, flags = pg.DOUBLEBUF)
         pg.display.set_caption("Fluid Simulator")
 
@@ -39,7 +39,7 @@ class Engine:
         self.inicial_setup()
 
     def inicial_setup(self):
-        self.positions = create_particules(self.n_parts)
+        self.positions = create_particules(self.n_parts, "grid")
         self.pred_pos = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.densities = np.zeros((self.n_parts,), dtype=np.float32)
@@ -60,7 +60,6 @@ class Engine:
                     d = calculate_density(self.positions, pos)
                     d = (self.densities + d)/2
                     d = d.mean()
-                    # print("Value d", d)
                     # exemp = calculate_exemple(self.positions, self.densities, pos)
 
                     col = get_density_color(d)
@@ -112,34 +111,45 @@ class Engine:
         dt = self.font.render(f"Delta time: {self.delta_time:.2f}", True, "white")
         t = self.font.render(f"Passed Time: {self.time:.2f}", True, "white")
 
-        self.screen.blit(fps, (20, 20))
-        self.screen.blit(dt, (20, 40))
-        self.screen.blit(t, (20, 60))
+        self.screen.blit(fps, (20, 15))
+        self.screen.blit(dt, (20, 30))
+        self.screen.blit(t, (20, 45))
 
         # bloco 2
-        num = self.font.render(f"Num. Particules: {self.n_parts}", True, "white")
-        g = self.font.render(f"Gravity: {GRAVITY:.0f}", True, "white")
-        p = self.font.render(f"Pressure: {FACTOR_PRESSURE:.1f}", True, "white")
+        num = self.font.render(f"N. Particules: {self.n_parts}", True, "white")
+        m = self.font.render(f"Mass: {MASS:.1f}", True, "white")
+        sr = self.font.render(f"Smooth Radius: {SMOOTHING_RADIUS:.0f}", True, "white")
 
-        self.screen.blit(num, (220, 20))
-        self.screen.blit(g, (220, 40))
-        self.screen.blit(p, (220, 60))
+        self.screen.blit(num, (130, 15))
+        self.screen.blit(m, (130, 30))
+        self.screen.blit(sr, (130, 45))
 
         # bloco 3
+        g = self.font.render(f"Gravity: {GRAVITY:.0f}", True, "white")
+        p = self.font.render(f"Pressure: {FACTOR_PRESSURE:.1f}", True, "white")
+        v = self.font.render(f"Viscosity: TODO", True, "white")
+        
+        self.screen.blit(g, (240, 15))
+        self.screen.blit(p, (240, 30))
+        self.screen.blit(v, (240, 45))
+
+        # bloco 4
         d1 = self.font.render(f"Density 1P: {DENSITY_ONE_UNITY:.1f}", True, "white")
         td = self.font.render(f"T. density: {TARGET_DENSITY:.1f}", True, "white")
         md = self.font.render(f"M. density: {self.densities.mean():.1f}", True, "white")
         
-        self.screen.blit(d1, (420, 20))
-        self.screen.blit(td, (420, 40))
-        self.screen.blit(md, (420, 60))
+        self.screen.blit(d1, (350, 15))
+        self.screen.blit(td, (350, 30))
+        self.screen.blit(md, (350, 45))
 
-        # bloco 4
+        # bloco 5
         status = self.font.render(f"Stop: {not self.is_running}", True, "white")
         color = self.font.render(f"Bg Color: {self.show_bg_color}", True, "white")
+        grad = self.font.render(f"See Gradient: TODO", True, "white")
 
-        self.screen.blit(status, (620, 20))
-        self.screen.blit(color, (620, 40))
+        self.screen.blit(status, (460, 15))
+        self.screen.blit(color, (460, 30))
+        self.screen.blit(grad, (460, 45))
 
     # @jit(cache=not DEBUG)
     def update(self):
