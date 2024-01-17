@@ -58,6 +58,9 @@ class Engine:
                 for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                     pos = np.array((x+3, y+3))
                     d = calculate_density(self.positions, pos)
+                    d = (self.densities + d)/2
+                    d = d.mean()
+                    # print("Value d", d)
                     # exemp = calculate_exemple(self.positions, self.densities, pos)
 
                     col = get_density_color(d)
@@ -132,7 +135,7 @@ class Engine:
         self.screen.blit(md, (420, 60))
 
         # bloco 4
-        status = self.font.render(f"Stop: {self.is_running}", True, "white")
+        status = self.font.render(f"Stop: {not self.is_running}", True, "white")
         color = self.font.render(f"Bg Color: {self.show_bg_color}", True, "white")
 
         self.screen.blit(status, (620, 20))
