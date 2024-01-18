@@ -40,6 +40,7 @@ class Engine:
         self.velocities: np.ndarray = None
         self.densities: np.ndarray = None
         self.pressures: np.ndarray = None
+        self.viscosities: np.ndarray = None
         self.mouse_force: np.ndarray = None
         self.inicial_setup()
 
@@ -49,13 +50,15 @@ class Engine:
         self.velocities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.densities = np.zeros((self.n_parts,), dtype=np.float32)
         self.pressures = np.zeros((self.n_parts, 2), dtype=np.float32)
+        self.viscosities = np.zeros((self.n_parts, 2), dtype=np.float32)
         self.mouse_force = np.zeros((self.n_parts, 2), dtype=np.float32)
 
         self.update_predictions()
         self.update_densities()
         self.update_pressures()
+        self.update_viscosities()
 
-    # @jit(parallel=True)
+    @jit(parallel=True)
     def render(self):
         self.screen.fill(COLOR_BG)
         
@@ -132,7 +135,7 @@ class Engine:
         # bloco 3
         g = self.font.render(f"Gravity: {GRAVITY:.0f}", True, "white")
         p = self.font.render(f"Pressure: {FACTOR_PRESSURE:.1f}", True, "white")
-        v = self.font.render(f"Viscosity: TODO", True, "white")
+        v = self.font.render(f"Viscosity: {FACTOR_VISCOSITY:.1f}", True, "white")
         
         self.screen.blit(g, (240, 15))
         self.screen.blit(p, (240, 30))
@@ -167,6 +170,7 @@ class Engine:
             self.update_predictions()
             self.update_densities()
             self.update_pressures()
+            self.update_viscosities()
             if self.mouse_value != 0: self.update_mouse_force()
             self.update_velocities()
 
@@ -191,15 +195,13 @@ class Engine:
             self.pressures[i] = pressure
 
     @jit(parallel=True)
-    def update_velocities(self):
-        density = np.stack((self.densities, self.densities), axis=1)
-        self.velocities[:, 1] += GRAVITY * self.delta_time
-        self.velocities += self.pressures * self.delta_time / density
-        self.velocities += self.mouse_force * self.delta_time / density
-
-    @jit(parallel=True)
-    def update_predictions(self):
-        self.pred_pos = self.positions + (self.velocities * self.delta_time)
+    def update_viscosities(self):
+        # TODO: iterate over all particules is slow, filter!
+        for i in prange(self.n_parts):
+            pos = self.pred_pos[i:i+1, :]
+            vel = self.velocities[i:i+1, :]
+            viscosity = calculate_viscosity_force(self.pred_pos, self.velocities, pos, vel, FACTOR_VISCOSITY)
+            self.viscosities[i] = viscosity        
 
     @jit(parallel=True)
     def update_mouse_force(self):
@@ -209,6 +211,18 @@ class Engine:
             mouse_pos, self.pred_pos, self.velocities,
             self.mouse_radius, self.mouse_value
         )
+
+    @jit(parallel=True)
+    def update_velocities(self):
+        density = np.stack((self.densities, self.densities), axis=1)
+        self.velocities[:, 1] += GRAVITY * self.delta_time
+        self.velocities += self.pressures * self.delta_time / density
+        self.velocities += self.viscosities * self.delta_time / density
+        self.velocities += self.mouse_force * self.delta_time / density
+
+    @jit(parallel=True)
+    def update_predictions(self):
+        self.pred_pos = self.positions + (self.velocities * self.delta_time)
 
     def handle_events(self):
         global GRAVITY, FACTOR_PRESSURE

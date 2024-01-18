@@ -56,6 +56,13 @@ def smoothing_kernel_derivative(dst: float | np.ndarray) -> float | np.ndarray:
 
     return 2 * value * FACTOR_SLOPE / VOLUME
 
+@njit
+def viscosity_smoothing_kernel(dst: float | np.ndarray) -> float | np.ndarray:
+    value = (SMOOTHING_RADIUS**2 - dst**2) / PIX_TO_UN**2
+    value = np.clip(value, a_min=0, a_max=None)
+
+    return value**3 #TODO: correct by volume
+
 
 @njit
 def calculate_density(positions: np.ndarray, ref: np.ndarray) -> float:
@@ -112,7 +119,7 @@ def calculate_pressure_force(
     # print("Pres:", shared_pressure[ind])
     # print("Res", influences[ind])
 
-    return np.sum(influences, axis=0) * MASS * 1000
+    return np.sum(influences, axis=0) * MASS * 100
 
 @njit
 def exemple_func(pos: np.ndarray) -> np.ndarray:
@@ -181,3 +188,18 @@ def calculate_mouse_force(
     force += np.where(dst < rad, (dir_to_input *strength -vels)*center_t, force)
 
     return force
+
+@njit
+def calculate_viscosity_force(
+    positions: np.ndarray, vels: np.ndarray,
+    ref_pos: np.ndarray, ref_vel: float,
+    factor: float = FACTOR_VISCOSITY
+) -> np.ndarray:
+    assert positions.shape == vels.shape
+
+    dst = np.sqrt(np.sum((positions - ref_pos)**2, axis=-1))    
+    kernel = viscosity_smoothing_kernel(dst)
+    kernel = np.stack((kernel, kernel), axis=1)
+    influences = (vels - ref_vel) * kernel
+
+    return np.sum(influences, axis=0) * MASS * factor
