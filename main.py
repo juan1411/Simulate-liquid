@@ -12,6 +12,7 @@ import sys
 from constants import *
 from utils import *
 from liquid import *
+from filter import *
 
 filterwarnings("ignore")
 
@@ -38,6 +39,8 @@ class Engine:
         self.n_parts = num_particules
         self.positions: np.ndarray = None
         self.pred_pos: np.ndarray = None
+        self.hashes: np.ndarray = None
+
         self.velocities: np.ndarray = None
         self.densities: np.ndarray = None
         self.pressures: np.ndarray = None
@@ -59,7 +62,7 @@ class Engine:
         self.update_pressures()
         self.update_viscosities()
 
-    @jit(parallel=True)
+    # @jit(parallel=True)
     def render(self):
         self.screen.fill(COLOR_BG)
         
@@ -106,6 +109,16 @@ class Engine:
             # tank.blit(alpha_surf, blit_pos)
 
             pg.draw.circle(self.screen, COLOR_WATER, pos, RADIUS, 2)
+
+        # mouse = np.array(pg.mouse.get_pos()).reshape((1, 2))
+        # space = get_lookup_space(positions_to_hash(mouse, 30)[0])
+        # for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), 30):
+        #     for x in prange(int(TANK[0]), int(TANK[0] +TANK[2]), 30):
+        #         aux = np.array([x, y]).reshape(1, 2)
+        #         aux = positions_to_hash(aux, 30)
+        #         col = "white"
+        #         if aux in space: col = "red"
+        #         pg.draw.rect(self.screen, col, (x, y, 30, 30), 1)
         
         # self.screen.blit(tank, (TANK[0], TANK[1]))
         pg.draw.circle(self.screen, "red", pg.mouse.get_pos(), self.mouse_radius, 1)
@@ -180,34 +193,49 @@ class Engine:
 
     @jit(parallel=True)
     def update_densities(self):
-        # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
             pos = self.pred_pos[i:i+1, :]
-            density = calculate_density(self.pred_pos, pos)
+            
+            hash_pos = positions_to_hash(pos)
+            inds = get_indices(hash_pos, self.hashes)
+
+            density = calculate_density(self.pred_pos[inds], pos)
             self.densities[i] = density
 
     @jit(parallel=True)
     def update_pressures(self):
-        # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
             pos = self.pred_pos[i:i+1, :]
             dens = self.densities[i]
-            pressure = calculate_pressure_force(self.pred_pos, self.densities, pos, dens, FACTOR_PRESSURE)
+
+            hash_pos = positions_to_hash(pos)
+            inds = get_indices(hash_pos, self.hashes)
+
+            pressure = calculate_pressure_force(
+                self.pred_pos[inds], self.densities[inds],
+                pos, dens, FACTOR_PRESSURE
+            )
             self.pressures[i] = pressure
 
     @jit(parallel=True)
     def update_viscosities(self):
-        # TODO: iterate over all particules is slow, filter!
         for i in prange(self.n_parts):
             pos = self.pred_pos[i:i+1, :]
             vel = self.velocities[i:i+1, :]
-            viscosity = calculate_viscosity_force(self.pred_pos, self.velocities, pos, vel, FACTOR_VISCOSITY)
+
+            hash_pos = positions_to_hash(pos)
+            inds = get_indices(hash_pos, self.hashes)
+
+            viscosity = calculate_viscosity_force(
+                self.pred_pos[inds], self.velocities[inds],
+                pos, vel, FACTOR_VISCOSITY
+            )
             self.viscosities[i] = viscosity        
 
     @jit(parallel=True)
     def update_mouse_force(self):
-        # TODO: iterate over all particules is slow, filter!
         mouse_pos = np.array(pg.mouse.get_pos()).reshape((1, 2))
+    
         self.mouse_force = calculate_mouse_force(
             mouse_pos, self.pred_pos, self.velocities,
             self.mouse_radius, self.mouse_value
@@ -224,6 +252,7 @@ class Engine:
     @jit(parallel=True)
     def update_predictions(self):
         self.pred_pos = self.positions + (self.velocities * self.delta_time)
+        self.hashes = positions_to_hash(self.pred_pos)
 
     def handle_events(self):
         global GRAVITY, FACTOR_PRESSURE

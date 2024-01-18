@@ -1,6 +1,7 @@
 from time import time
 from constants import *
 from liquid import *
+from filter import *
 
 
 def test_density():
@@ -68,7 +69,17 @@ def test_pressure():
     return None
 
 
+def test_filter():
+    num = 900
+    positions = create_particules(num, "grid")
+    coords = pos_to_coord(positions)
+    hashes = coords_to_hash(coords)
+    inds = get_indices(hashes[0], hashes)
+    assert inds.sum() == hashes[inds].shape[0]
+
+
 # test_density()
 # time_density()
-
-test_pressure()
+# test_pressure()
+    
+test_filter()
