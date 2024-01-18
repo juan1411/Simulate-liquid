@@ -112,7 +112,7 @@ def calculate_pressure_force(
     # print("Pres:", shared_pressure[ind])
     # print("Res", influences[ind])
 
-    return np.sum(influences, axis=0) * MASS * 10
+    return np.sum(influences, axis=0) * MASS * 1000
 
 @njit
 def exemple_func(pos: np.ndarray) -> np.ndarray:
@@ -152,7 +152,7 @@ def calculate_exemple_gradient(
 
     div = dst * densities
     # NOTE: np.where for zero divison error
-    div = np.where(div > 0, div, div+1)
+    div = np.where(div > 0, div, div+0.1)
     
     slope = smoothing_kernel_derivative(dst)
 
@@ -166,7 +166,7 @@ def calculate_exemple_gradient(
 
     return np.sum(influences, axis=0) * MASS * 20_000
 
-@jit
+@njit
 def calculate_mouse_force(
     mouse_pos:np.ndarray, positions:np.ndarray,
     vels:np.ndarray, rad:float, strength:float
@@ -174,10 +174,10 @@ def calculate_mouse_force(
     force = np.zeros(positions.shape)
     offset = mouse_pos - positions
     dst = np.sqrt(np.sum(offset**2, axis=-1))
-    dst = np.repeat(dst.reshape((dst.shape[0], 1)), 2, axis=1)
+    dst = np.stack((dst, dst), axis=1)
     center_t = 1 - dst/rad
     
-    dir_to_input = np.where(dst > 0.1, offset/dst, force)
+    dir_to_input = np.where(dst > 0.0001, offset/dst, force)
     force += np.where(dst < rad, (dir_to_input *strength -vels)*center_t, force)
 
     return force

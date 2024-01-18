@@ -55,13 +55,14 @@ class Engine:
         self.update_densities()
         self.update_pressures()
 
+    @jit(parallel=True)
     def render(self):
         self.screen.fill(COLOR_BG)
         
         # NOTE: background color
         if self.show_bg_color:
             for y in range(int(TANK[1]), int(TANK[1] +TANK[3]-4), 5):
-                for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
+                for x in prange(int(TANK[0]), int(TANK[0] +TANK[2]-4), 5):
                     pos = np.array((x+3, y+3))
                     d = calculate_density(self.positions, pos)
                     d = (self.densities + d)/2
@@ -76,7 +77,7 @@ class Engine:
         if self.show_gradient:
             inc = PIX_TO_UN//2 +1 -5
             for y in range(int(TANK[1]), int(TANK[1] +TANK[3]), PIX_TO_UN):
-                for x in range(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
+                for x in prange(int(TANK[0]), int(TANK[0] +TANK[2]-PIX_TO_UN+1), PIX_TO_UN):
                     pos = np.array((x +inc, y +inc)).reshape((1, 2))
 
                     d = calculate_density(self.pred_pos, pos)
@@ -100,7 +101,7 @@ class Engine:
         #     self.screen.blit(alpha_surf, blit_pos.ravel())
 
         # NOTE: particules
-        for i in range(self.n_parts):
+        for i in prange(self.n_parts):
             pos = self.positions[i]
             pg.draw.circle(self.screen, (250,250,250), pos, RADIUS, 2)
         
@@ -156,7 +157,7 @@ class Engine:
         self.screen.blit(color, (460, 30))
         self.screen.blit(grad, (460, 45))
 
-    # @jit(cache=not DEBUG)
+    @jit
     def update(self):
         self.delta_time = self.clock.tick() * 0.001
 
@@ -192,7 +193,7 @@ class Engine:
 
     @jit(parallel=True)
     def update_velocities(self):
-        density = np.repeat(self.densities.reshape((self.n_parts, 1)), 2, axis=1)
+        density = np.stack((self.densities, self.densities), axis=1)
         self.velocities[:, 1] += GRAVITY * self.delta_time
         self.velocities += self.pressures * self.delta_time / density
         self.velocities += self.mouse_force * self.delta_time / density
@@ -236,8 +237,8 @@ class Engine:
                 if event.key == pg.K_UP: GRAVITY += 1
                 elif event.key == pg.K_DOWN: GRAVITY -= 1
 
-                if event.key == pg.K_RIGHT: FACTOR_PRESSURE += 0.5
-                elif event.key == pg.K_LEFT: FACTOR_PRESSURE -= 0.5
+                if event.key == pg.K_RIGHT: FACTOR_PRESSURE += 1
+                elif event.key == pg.K_LEFT: FACTOR_PRESSURE -= 1
 
                 if event.key == pg.K_SPACE:
                     self.is_running = not self.is_running
@@ -266,12 +267,12 @@ class Engine:
         sys.exit()
 
 
-# @njit
+@njit
 def tank_collision(pos: np.ndarray, vel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     ref = pos - CENTER_TANK_NUMPY
-    cond_x = abs(ref[:, 0]) +RADIUS >= TANK[2]/2
-    cond_y = abs(ref[:, 1]) +RADIUS >= TANK[3]/2
+    cond_x = np.abs(ref[:, 0]) +RADIUS >= TANK[2]/2
+    cond_y = np.abs(ref[:, 1]) +RADIUS >= TANK[3]/2
 
     pos[:, 0] = np.where(cond_x,
         CENTER_TANK_NUMPY[0, 0] +(TANK[2]/2 -RADIUS -0.1) * np.sign(ref[:, 0]),
