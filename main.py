@@ -55,7 +55,7 @@ class Engine:
         self.update_densities()
         self.update_pressures()
 
-    @jit(parallel=True)
+    # @jit(parallel=True)
     def render(self):
         self.screen.fill(COLOR_BG)
         
@@ -89,22 +89,21 @@ class Engine:
                     pg.draw.circle(self.screen, (210,210,15), (x +inc, y +inc), 4)
                     pg.draw.line(self.screen, (210,210,15), (x +inc, y +inc), end, 3)
 
-        # # NOTE: tentativa de aproximar o valor da funcao
-        # for i in range(self.n_parts):
-        #     pos = self.positions[i:i+1, :]
-
-        #     alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
-        #     alpha_surf.fill((0, 0, 0, 0))
-        #     col = get_exemple_color(exemple_func(pos))
-        #     draw_smooth_circle(alpha_surf, col)
-        #     blit_pos = pos - SMOOTHING_RADIUS
-        #     self.screen.blit(alpha_surf, blit_pos.ravel())
-
         # NOTE: particules
+        # tank = pg.Surface((TANK[2], TANK[3])).convert_alpha()
         for i in prange(self.n_parts):
             pos = self.positions[i]
-            pg.draw.circle(self.screen, (250,250,250), pos, RADIUS, 2)
+
+            # alpha_surf = pg.Surface((2*SMOOTHING_RADIUS, 2*SMOOTHING_RADIUS)).convert_alpha()
+            # alpha_surf.fill((0, 0, 0, 0))
+            # # col = get_exemple_color(exemple_func(pos))
+            # draw_smooth_circle(alpha_surf, COLOR_WATER)
+            # blit_pos = pos -SMOOTHING_RADIUS -np.array([TANK[0], TANK[1]])
+            # tank.blit(alpha_surf, blit_pos)
+
+            pg.draw.circle(self.screen, COLOR_WATER, pos, RADIUS, 2)
         
+        # self.screen.blit(tank, (TANK[0], TANK[1]))
         pg.draw.circle(self.screen, "red", pg.mouse.get_pos(), self.mouse_radius, 1)
         pg.draw.rect(self.screen, COLOR_TANK, TANK, 1)
 
@@ -332,7 +331,7 @@ def get_exemple_color(value: float) -> pg.Color:
     # -1 <= value <= 1
     return COLOR_LESS_ATRIB.lerp(COLOR_MORE_ATRIB, (1+value)/2)
 
-@njit
+@jit
 def draw_smooth_circle(
     surface, color: pg.Color,
     center=(SMOOTHING_RADIUS, SMOOTHING_RADIUS),
@@ -340,10 +339,10 @@ def draw_smooth_circle(
 ) -> None:
     r, g, b, _ = color
     a = 0
-    for rad in range(radius, 1, -2):
+    for rad in range(radius, 1, -1):
         col = pg.Color(r, g, b, int(a))
         pg.draw.circle(surface, col, center, rad)
-        a += 2*(250/radius)
+        a += (250/radius)
     return
 
 
